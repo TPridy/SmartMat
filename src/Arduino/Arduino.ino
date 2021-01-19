@@ -3,6 +3,12 @@
 #include <SoftwareSerial.h>
 
 SoftwareSerial ESPserial(2, 3); // RX | TX
+
+char inData[20]; // Allocate some space for the string
+char inChar=-1; // Where to store the character read
+byte index = 0; // Index into array; where to store the character
+char receiveFlag = 0;
+
 /*
 /////////////////////////////////////////////////////////////////
 // HX711 Load Amplifier Definitions
@@ -22,11 +28,10 @@ unsigned long t = 0;
  
 void setup()
 {
-    Serial.begin(115200);     // communication with the host computer
-    //while (!Serial)   { ; }
+    Serial.begin(9600);     // communication with the host computer
  
     // Start the software serial for communication with the ESP8266
-    ESPserial.begin(115200); 
+    ESPserial.begin(9600); 
  
     Serial.println("");
     Serial.println("Ready");
@@ -35,26 +40,39 @@ void setup()
  
 void loop()
 {
-    // listen for communication from the ESP8266 and then write it to the serial monitor
-    if ( ESPserial.available() )   {  
-      //Serial.write( ESPserial.read() );
-      Serial.println(ESPserial.read());
+
+   /* if (ESPserial.available() >= 19) // Don't read unless
+    {
+        while(index < 19) // One less than the size of the array
+        {
+            inChar = ESPserial.read(); // Read a character
+            inData[index] = inChar; // Store it
+            index++; // Increment where to write next
+            inData[index] = '\0'; // Null terminate the string
+        }
+        receiveFlag = 1;
+    }
+    if (receiveFlag){
+      Serial.println(inData);
+      for (int i=0;i<19;i++) {
+        inData[i]=0;
       }
+        index=0;
+        receiveFlag = 0;
+        Serial.println(inData);
+    }*/
+    
+    // listen for communication from the ESP8266 and then write it to the serial monitor
+    /*if ( ESPserial.available() )   {  
+      String content = "";
+      //Serial.write( ESPserial.read() );
+      Serial.println(content.concat(ESPserial.read()));
+      }*/
  
     // listen for user input and send it to the ESP8266
-    //if ( Serial.available() )       {  
+    if ( ESPserial.available()>5 )       {  
+      inChar = ESPserial.read();
       //ESPserial.write( Serial.read() );
-      //Serial.println(Serial.read());
-      //}
+      Serial.print(inChar);
+      }
 }
-/*
-void setup() {
-  //Initialize the Load Cell Amplifier
-
-
-}
-
-void loop() {
-  // put your main code here, to run repeatedly:
-
-}*/
