@@ -1,0 +1,1 @@
+This is the software that will be run on the hardware components of the SmartMat.
