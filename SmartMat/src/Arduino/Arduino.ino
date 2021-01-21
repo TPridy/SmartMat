@@ -1,63 +1,62 @@
 #include <HX711_ADC.h>
 #include <EEPROM.h>
 #include <SoftwareSerial.h>
+#include "uart.h"
 #include "settings.h"
+#include "modes.h"
 
 //SoftwareSerial ESPserial(2, 3); // RX | TX
 Settings settings(STAYATHOME,POUNDS);
-char inputBuffer[10];
-
+char inputBuffer[11];
  
 void setup()
 {
-    //Start the serial communication with the host computer (Include for debugging)
-    Serial.begin(9600); 
-    // Start the software serial for communication with the ESP8266
-    //ESPserial.begin(9600); 
+  initializeCommunications();
+  // Start the software serial for communication with the ESP8266
+  //ESPserial.begin(9600); 
 }
  
 void loop()
 {
   switch(settings.getMode())
   {
-    case NONE:        //Serial.print("NONE\n");
+    case NONE:        noneModeHandle();
                       break;
-    case STAYATHOME:  //Serial.print("STAYATHOME\n");
+    case STAYATHOME:  stayAtHomeModeHandle();
                       break;
-    case AWAY:        //Serial.print("AWAY\n");
+    case AWAY:        awayModeHandle();
                       break;
-    case NIGHT:       //Serial.print("NIGHT\n");
+    case NIGHT:       nightModeHandle();
                       break;
-    case LOCKED:      //Serial.print("LOCKED\n");
+    case LOCKED:      lockedModeHandle();
                       break;
-    default:          //Serial.print("ERROR: Something went wrong...\n");  
+    case ALARM:       lockedModeHandle();
+                      break;
+    default:          alarmModeHandle(); 
                       break;
   }
- 
-    //Get Control Messages from ESP8266
-    if ( Serial.available()==10 )
-    {
-      for (char i=0;i<=9;i++)
+
+  //Check for Message and Decode if necessary
+  if ( Serial.available()==10 )
+  {
+      /*
+      Read in the message of 10 bytes into the buffer
+      */
+      for (char i=0;i<=10;i++)
       {
-        inputBuffer[i] = Serial.read();  
+        if (i == 10)
+        {
+          inputBuffer[i] = 0;
+        }
+        else
+        {
+          inputBuffer[i] = Serial.read();
+        }
       }
-      Serial.print(inputBuffer);
-    }
+      /*
+      Decode the message when received.
+      */
+      decodeMessage(inputBuffer);
+  }
+ 
 }
-
-
-/*
-/////////////////////////////////////////////////////////////////
-// HX711 Load Amplifier Definitions
-/////////////////////////////////////////////////////////////////
-//pins:
-const int HX711_dout = 4; //mcu > HX711 dout pin
-const int HX711_sck = 5; //mcu > HX711 sck pin
-
-//HX711 constructor:
-HX711_ADC LoadCell(HX711_dout, HX711_sck);
-
-const int calVal_eepromAdress = 0;
-unsigned long t = 0;
-/////////////////////////////////////////////////////////////////
-*/

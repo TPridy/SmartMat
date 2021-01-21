@@ -15,7 +15,7 @@ Settings::Settings(char new_mode ,char new_weight_mode ){
 void Settings::updateSettings(char new_mode, char new_weight_mode){
     setMode(new_mode);
     setWeightMode(new_weight_mode);
-
+    return;
 }
 
 char Settings::getMode(){
@@ -32,9 +32,11 @@ char Settings::getPhoneNumber(){
 
 void Settings::setMode(char new_mode){
     mode = new_mode;
+    return;
 }
 
 void Settings::setWeightMode(char new_weight_mode){
     weight_mode = new_weight_mode;
+    return;
 }
 

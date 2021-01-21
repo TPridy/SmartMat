@@ -8,10 +8,9 @@ Serial.begin(9600);
 }
  
 void loop() {
-  delay(1000);
+  delay(5000);
   s.write("0123456789");
-  //Serial.println("0123456789");
-  
+  Serial.println("0123456789");
 }
  
  

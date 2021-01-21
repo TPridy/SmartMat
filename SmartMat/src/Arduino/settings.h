@@ -28,12 +28,11 @@ class Settings {
     private:
         char mode;
         char weight_mode;
-        char phone_number[10];
 
     //Public
     public:
         //Constructors
-        Settings(char new_mode = NONE,char new_weight_mode = POUNDS);//,char new_phone_number[10] = "0000000000");
+        Settings(char new_mode = NONE,char new_weight_mode = POUNDS);
         //Methods
         void updateSettings(char new_mode, char new_weight_mode);
         //Getters
@@ -43,7 +42,7 @@ class Settings {
         //Setters
         void setMode(char new_mode); 
         void setWeightMode(char new_weight_mode);
-        //void setPhoneNumber(char new_phone_number[10]);
+      
 };
 
 #endif
