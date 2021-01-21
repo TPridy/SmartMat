@@ -7,8 +7,14 @@
 #ifndef Uart_h
 #define Uart_h
 #include "Arduino.h"
+#include "settings.h"
+
+enum ControlMessages{
+    CHANGE_MODE,
+    CHANGE_WEIGHT_MODE
+};
 
 void initializeCommunications();
-void decodeMessage(const char *message);
+void decodeMessage(const char *message,char length,Settings *settings);
 
 #endif

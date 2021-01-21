@@ -39,3 +39,4 @@ void Settings::setWeightMode(char new_weight_mode){
     weight_mode = new_weight_mode;
     return;
 }
+

@@ -17,10 +17,10 @@ void initializeCommunications()
   default baud rate will be 9600.
   */
   Serial.begin(9600); 
-  Serial.print("Initializing Communications...\n");
+  Serial.print("SmartMat: Initializing Communications...\n");
 }
 
-void decodeMessage(const char *message, char length)
+void decodeMessage(const char *message,char length,Settings *settings)
 {
     /*
     This is where the message received from the NodeMCU 
@@ -39,25 +39,25 @@ void decodeMessage(const char *message, char length)
     switch(message[0])
     {
       case CHANGE_MODE:
-        switch(message[1])
+        switch(message[1]) 
         {
           case NONE:        Serial.println("Changing mode to NONE...");
-                            settings.setMode(NONE);
+                            settings->setMode(NONE);
                             break;
           case STAYATHOME:  Serial.println("Changing mode to STAYATHOME...");
-                            settings.setMode(STAYATHOME);
+                            settings->setMode(STAYATHOME);
                             break;
           case AWAY:        Serial.println("Changing mode to AWAY...");
-                            settings.setMode(AWAY);
+                            settings->setMode(AWAY);
                             break;
           case NIGHT:       Serial.println("Changing mode to NIGHT...");
-                            settings.setMode(NIGHT);
+                            settings->setMode(NIGHT);
                             break;
           case LOCKED:      Serial.println("Changing mode to LOCKED...");
-                            settings.setMode(LOCKED);
+                            settings->setMode(LOCKED);
                             break;
           case ALARM:       Serial.println("Changing mode to ALARM...");
-                            settings.setMode(ALARM);
+                            settings->setMode(ALARM);
                             break;
           default:          Serial.println("ERROR: Did not recognize mode to change to...");
                             break;                                                                                
@@ -67,10 +67,10 @@ void decodeMessage(const char *message, char length)
         switch(message[1])
         {
           case KILOGRAMS:   Serial.println("Changing weight mode to KILOGRAMS...");
-                            settings.setWeightMode(KILOGRAMS);
+                            settings->setWeightMode(KILOGRAMS);
                             break;
           case POUNDS:      Serial.println("Changing weight mode to POUNDS...");
-                            settings.setWeightMode(POUNDS);
+                            settings->setWeightMode(POUNDS);
                             break;
           default:          Serial.println("ERROR: Did not recognize weight mode to change to...");
                             break;                                                                                
