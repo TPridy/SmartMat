@@ -17,6 +17,7 @@ void initializeCommunications()
   default baud rate will be 9600.
   */
   Serial.begin(9600); 
+  ESPserial.begin(9600); 
   Serial.print("SmartMat: Initializing Communications...\n");
 }
 
@@ -25,17 +26,7 @@ void decodeMessage(const char *message,char length,Settings *settings)
     /*
     This is where the message received from the NodeMCU 
     will be decoded to determine what to do.
-    
-   
-    if (strcmp(message, "012345678") == 0)
-    {
-        Serial.print("Received!\n");
-    }
-    else
-    {
-        Serial.print("ERROR: Cannot decode the message -> ");
-        Serial.println(message);
-    }*/
+    */
     switch(message[0])
     {
       case CHANGE_MODE:

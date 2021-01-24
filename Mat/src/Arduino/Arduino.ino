@@ -1,28 +1,50 @@
-#include <HX711_ADC.h>
-#include <EEPROM.h>
 #include <SoftwareSerial.h>
 #include "uart.h"
 #include "settings.h"
 #include "modes.h"
 
-//SoftwareSerial ESPserial(2, 3); // RX | TX
-Settings *settings = new Settings(STAYATHOME,POUNDS);
+SoftwareSerial ESPserial(12, 13); // RX | TX
+Settings *settings = new Settings(NONE,POUNDS);
 char inputBuffer[16];
  
 void setup()
-{
+{  
+  //Start the software serial for communication with the ESP8266
   initializeCommunications();
-  // Start the software serial for communication with the ESP8266
-  //ESPserial.begin(9600); 
+  
   Serial.println("SmartMat: Initialization Complete");
   Serial.print("\n");
-  Serial.println("---------------------------------");
-  Serial.println("-          SmartMat             -");
-  Serial.println("---------------------------------");
+  Serial.println("*********************************");
+  Serial.println("*          SmartMat             *");
+  Serial.println("*********************************");
   Serial.print("Mode: ");
-  Serial.println(settings->getMode());
+  switch(settings->getMode()) 
+  {
+    case NONE:        Serial.println("NONE");
+                      break;
+    case STAYATHOME:  Serial.println("STAYATHOME");
+                      break;
+    case AWAY:        Serial.println("AWAY");
+                      break;
+    case NIGHT:       Serial.println("NIGHT");
+                      break;
+    case LOCKED:      Serial.println("LOCKED");
+                      break;
+    case ALARM:       Serial.println("ALARM");
+                      break;
+    default:          Serial.println("\nERROR: Did not recognize mode...");
+                      break;                                                                                
+  }
   Serial.print("Weight Mode: ");
-  Serial.println(settings->getWeightMode());
+  switch(settings->getWeightMode()) 
+  {
+    case KILOGRAMS:   Serial.println("KILOGRAMS");
+                      break;
+    case POUNDS:      Serial.println("POUNDS");
+                      break;
+    default:          Serial.println("\nERROR: Did not recognize mode...");
+                      break;                                                                                
+  }
   Serial.print("\n");
 }
  
@@ -40,14 +62,14 @@ void loop()
                       break;
     case LOCKED:      lockedModeHandle();
                       break;
-    case ALARM:       lockedModeHandle();
+    case ALARM:       alarmModeHandle();
                       break;
-    default:          alarmModeHandle(); 
+    default:          noneModeHandle(); 
                       break;
   }
 
   //Check for Message and Decode if necessary
-  if ( Serial.available()>= 2 )
+  if ( ESPserial.available()>= 2 )
   {
     Serial.println("SmartMat: Message Received");
       /*
@@ -55,15 +77,7 @@ void loop()
       */
       for (char i=0;i<=2;i++)
       {
-        inputBuffer[i] = Serial.read();
-        /*if (i == 2)
-        {
-          inputBuffer[i] = 0;
-        }
-        else
-        {
-          
-        }*/
+        inputBuffer[i] = ESPserial.read();
       }
       /*
       Decode the message when received.

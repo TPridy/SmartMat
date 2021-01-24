@@ -17,6 +17,7 @@ void initializeCommunications()
   default baud rate will be 9600.
   */
   Serial.begin(9600); 
+  ESPserial.begin(9600); 
   Serial.print("SmartMat: Initializing Communications...\n");
 }
 
@@ -25,38 +26,28 @@ void decodeMessage(const char *message,char length,Settings *settings)
     /*
     This is where the message received from the NodeMCU 
     will be decoded to determine what to do.
-    
-   
-    if (strcmp(message, "012345678") == 0)
-    {
-        Serial.print("Received!\n");
-    }
-    else
-    {
-        Serial.print("ERROR: Cannot decode the message -> ");
-        Serial.println(message);
-    }*/
+    */
     switch(message[0])
     {
       case CHANGE_MODE:
         switch(message[1]) 
         {
-          case NONE:        Serial.println("Changing mode to NONE...");
+          case NONE:        Serial.println("SmartMat: Changing mode to NONE...");
                             settings->setMode(NONE);
                             break;
-          case STAYATHOME:  Serial.println("Changing mode to STAYATHOME...");
+          case STAYATHOME:  Serial.println("SmartMat: Changing mode to STAYATHOME...");
                             settings->setMode(STAYATHOME);
                             break;
-          case AWAY:        Serial.println("Changing mode to AWAY...");
+          case AWAY:        Serial.println("SmartMat: Changing mode to AWAY...");
                             settings->setMode(AWAY);
                             break;
-          case NIGHT:       Serial.println("Changing mode to NIGHT...");
+          case NIGHT:       Serial.println("SmartMat: Changing mode to NIGHT...");
                             settings->setMode(NIGHT);
                             break;
-          case LOCKED:      Serial.println("Changing mode to LOCKED...");
+          case LOCKED:      Serial.println("SmartMat: Changing mode to LOCKED...");
                             settings->setMode(LOCKED);
                             break;
-          case ALARM:       Serial.println("Changing mode to ALARM...");
+          case ALARM:       Serial.println("SmartMat: Changing mode to ALARM...");
                             settings->setMode(ALARM);
                             break;
           default:          Serial.println("ERROR: Did not recognize mode to change to...");
@@ -66,10 +57,10 @@ void decodeMessage(const char *message,char length,Settings *settings)
       case CHANGE_WEIGHT_MODE:
         switch(message[1])
         {
-          case KILOGRAMS:   Serial.println("Changing weight mode to KILOGRAMS...");
+          case KILOGRAMS:   Serial.println("SmartMat: Changing weight mode to KILOGRAMS...");
                             settings->setWeightMode(KILOGRAMS);
                             break;
-          case POUNDS:      Serial.println("Changing weight mode to POUNDS...");
+          case POUNDS:      Serial.println("SmartMat: Changing weight mode to POUNDS...");
                             settings->setWeightMode(POUNDS);
                             break;
           default:          Serial.println("ERROR: Did not recognize weight mode to change to...");
