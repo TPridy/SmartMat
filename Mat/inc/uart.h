@@ -15,6 +15,7 @@ enum ControlMessages{
 };
 
 void initializeCommunications();
+void checkforMessage(Settings *settings);
 void decodeMessage(const char *message,char length,Settings *settings);
 
 #endif

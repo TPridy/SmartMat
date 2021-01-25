@@ -2,20 +2,22 @@
 #include "uart.h"
 #include "settings.h"
 #include "modes.h"
+#include "pressure_sensors.h"
 
-SoftwareSerial ESPserial(12, 13); // RX | TX
-Settings *settings = new Settings(NONE,POUNDS);
-char inputBuffer[16];
+
+Settings *settings = new Settings(STAYATHOME,POUNDS);
  
 void setup()
 {  
   //Start the software serial for communication with the ESP8266
   initializeCommunications();
-  
+  /*if (initializePressureSensors() == EXIT_FAILURE)
+  {
+    Serial.println("SmartMat: Pressure Sensors failed to initialize.");
+  }*/
   Serial.println("SmartMat: Initialization Complete");
   Serial.print("\n");
-  Serial.println("*********************************");
-  Serial.println("*          SmartMat             *");
+  Serial.println("            SmartMat             ");
   Serial.println("*********************************");
   Serial.print("Mode: ");
   switch(settings->getMode()) 
@@ -68,20 +70,6 @@ void loop()
                       break;
   }
 
-  //Check for Message and Decode if necessary
-  if ( ESPserial.available()>= 2 )
-  {
-    Serial.println("SmartMat: Message Received");
-      /*
-      Read in the message of 10 bytes into the buffer
-      */
-      for (char i=0;i<=2;i++)
-      {
-        inputBuffer[i] = ESPserial.read();
-      }
-      /*
-      Decode the message when received.
-      */
-      decodeMessage(inputBuffer,0,settings);
-  }
+  //Check for message from NodeMCU
+  checkforMessage(settings);
 }
