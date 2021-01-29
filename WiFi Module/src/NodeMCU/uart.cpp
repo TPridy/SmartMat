@@ -17,7 +17,7 @@ void initializeCommunications()
   default baud rate will be 9600.
   */
   Serial.begin(9600); 
-  ESPserial.begin(9600); 
+  //ESPserial.begin(9600); 
   Serial.print("SmartMat: Initializing Communications...\n");
 }
 
