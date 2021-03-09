@@ -31,7 +31,15 @@
 //Calibration Factor
 #define CALIBRATION_FACTOR -7050.0
 
-//Threshold Value
-#define THRESHOLD 100
+#define s0  A4
+#define s1  A3
+#define s2  A2
+#define s3  A1
+#define w0  6
+#define w1  5
+#define w2  4
+#define w3  3
+#define OUT_pin  2
+#define SIG_pin  A0
 
 #endif

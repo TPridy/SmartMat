@@ -3,27 +3,18 @@
 #include "HX711.h"
 
 //Settings
-int mode = HOME;
-int weight_mode = POUNDS;
+byte mode = HOME;
+byte weight_mode = POUNDS;
 
-//Objects
+//NodeMCU
+SoftwareSerial NodeMCU(7, 8); 
+
+//Scale
 HX711  scale;
-
-//Settings *settings = new Settings(HOME,POUNDS);
 
 //****************************************************
 //Accurate Weight Distribution Settings and Pins     *
 //****************************************************
-const byte s0 = A4; 
-const byte s1 = A3; 
-const byte s2 = A2; 
-const byte s3 = A1;
-const byte w0 = 6;  
-const byte w1 = 5; 
-const byte w2 = 4; 
-const byte w3 = 3;
-const byte OUT_pin = 2;
-const byte SIG_pin = A0; 
 
 int matrix[15][15];   //Value Matrix
 int calibra[15][15];  //Calibration Matrix 
@@ -57,38 +48,13 @@ const boolean muxChannel[15][4]={
 //****************************************************
 void noneModeHandle()
 {
-  //getWeight();
+  
   return;
 }
 
 void HomeModeHandle()
 {
-  if (Serial.available() > 0)
-  {
-    inByte = Serial.read();
-    
-    if(inByte == 'A')
-    {
-      getAcuurateWeightDistributionMatrx();
-      for(int j = 0; j < 15; j++)
-      { 
-        for(int i = 0; i < 15; i++)
-        {
-          Serial.print(matrix[j][i]);
-          Serial.print("\t");
-          if (i == 14)
-          {
-            Serial.print("\n");
-          }
-        } 
-      }
-      Serial.print("\n");
-      Serial.print("\n");
-      Serial.print("\n");
-    } 
-  }
-
-  //Serial.print("HOME\n");
+  
   /*
   if (getWeight() > getLastReading() + THRESHOLD)
   {
@@ -147,16 +113,16 @@ void alarmModeHandle()
 //****************************************************
 //Accurate Weight Detection                          *
 //****************************************************
-/*
+
 int initializeWeightDetection()
 {
     //Print to Serial
     Serial.println("SmartMat: Initializing Accurate Weight Detection Layer...");
 
     //Start up Scale
-    scale.begin(DATA, SCLK);
-    scale.set_scale(CALIBRATION_FACTOR);
-    scale.tare();
+    //scale.begin(DATA, SCLK);
+    //scale.set_scale(CALIBRATION_FACTOR);
+    //scale.tare();
 
     //Return
     return EXIT_SUCCESS;
@@ -167,16 +133,14 @@ float getWeight()
     //1 second delay for Last Reading
     //delay(1000);
     
-    //Get and print data
-    Serial.print("SmartMat: Weight Data -> ");
+    //Get data
     float reading = scale.get_units();
-    Serial.println(reading,DEC);
-    last_reading = reading;
+    //Serial.println(reading,DEC);
     
     //Return weight
     return reading;
 }
-
+/*
 float getLastReading()
 {
     //Return weight
@@ -287,7 +251,7 @@ void writeMux(byte channel)
   }
 }
 
-int getAcuurateWeightDistributionMatrx()
+void getAcuurateWeightDistributionMatrx()
 {
   int t = 0;
     
@@ -313,9 +277,42 @@ int getAcuurateWeightDistributionMatrx()
   }
 }
 
+void printAccurateWeightDistributionMatrix()
+{
+  for(int j = 0; j < 15; j++)
+      { 
+        for(int i = 0; i < 15; i++)
+        {
+          Serial.print(matrix[j][i]);
+          Serial.print("\t");
+          if (i == 14)
+          {
+            Serial.print("\n");
+          }
+        } 
+      }
+      Serial.print("\n");
+      Serial.print("\n");
+      Serial.print("\n");
+}
+
 //****************************************************
 //UART Communication                                 *
 //****************************************************
+
+void checkforMessage()
+{
+  if (Serial.available() > 0)
+  {
+    inByte = Serial.read();
+    
+    if(inByte == 'A')
+    {
+      getAcuurateWeightDistributionMatrx();
+      printAccurateWeightDistributionMatrix();
+    } 
+  }
+}
 
 void initializeCommunications()
 {
@@ -325,7 +322,7 @@ void initializeCommunications()
   default baud rate will be 9600.
   */
   Serial.begin(115200); 
-  //ESPserial.begin(9600); 
+  NodeMCU.begin(115200); 
   Serial.print("SmartMat: Initializing Communications...\n");
 }
 /*
@@ -392,13 +389,15 @@ void setup()
 {  
   //Start the software serial for communication with the NodeMCU
   initializeCommunications();
-  /*if (initializeWeightDetection() == EXIT_FAILURE)
+  if (initializeWeightDetection() == EXIT_FAILURE)
   {
     Serial.println("SmartMat: Accurate Weight Detection Layer failed to initialize.");
-  }*/
+    while(1);
+  }
   if (initializeWeightDistribution() == EXIT_FAILURE)
   {
     Serial.println("SmartMat: Accurate Weight Distribution Layer failed to initialize.");
+    while(1);
   }
   Serial.println("SmartMat: SmartMat Initialization Complete");
   Serial.print("\n");
@@ -423,7 +422,7 @@ void setup()
                       break;                                                                                
   }
   Serial.print("Weight Mode: ");
-  switch(mode) 
+  switch(weight_mode) 
   {
     case KILOGRAMS:   Serial.println("KILOGRAMS");
                       break;
@@ -456,5 +455,5 @@ void loop()
   }
 
   //Check for message from NodeMCU
-  //checkforMessage(settings);
+  checkforMessage();
 }
