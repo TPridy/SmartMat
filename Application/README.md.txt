@@ -1,1 +1,0 @@
-Please place smart phone application code here.
