@@ -20,6 +20,10 @@
 #define KILOGRAMS 1
 #define POUNDS 2
 
+//WiFi Status
+#define DISCONNECTED 0
+#define CONNECTED 1
+
 class Settings {
         
     //Public

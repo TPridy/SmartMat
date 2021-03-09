@@ -5,13 +5,9 @@
 */
 
 #include <string.h>
-#include <SoftwareSerial.h>
 #include "uart.h"
 #include "settings.h"
 #include "Arduino.h"
-
-SoftwareSerial ESPserial(12, 13); // RX | TX
-char inputBuffer[16];
 
 void initializeCommunications()
 {
@@ -21,28 +17,8 @@ void initializeCommunications()
   default baud rate will be 9600.
   */
   Serial.begin(9600); 
-  ESPserial.begin(9600); 
+  //ESPserial.begin(9600); 
   Serial.print("SmartMat: Initializing Communications...\n");
-}
-
-void checkforMessage(Settings *settings)
-{
-  //Check for Message and Decode if necessary
-  if ( ESPserial.available()>= 2 )
-  {
-    Serial.println("SmartMat: Message Received");
-      /*
-      Read in the message of 10 bytes into the buffer
-      */
-      for (char i=0;i<=2;i++)
-      {
-        inputBuffer[i] = ESPserial.read();
-      }
-      /*
-      Decode the message when received.
-      */
-      decodeMessage(inputBuffer,0,settings);
-  }
 }
 
 void decodeMessage(const char *message,char length,Settings *settings)
