@@ -2,14 +2,9 @@
 #include <BlynkSimpleEsp8266.h>
 #include <SoftwareSerial.h>
 #include "settings.h"
-#include "modes.h"
-#include "uart.h"
-//SoftwareSerial s(D6,D5);
 
-//char message[2];
-//char message2[2];
-//char message3[2];
-//int data;
+SoftwareSerial SmartMat(D6,D5);
+
 int Mode = STAYATHOME;
 int WeightMode = POUNDS;
 
@@ -24,19 +19,13 @@ WidgetTerminal terminal(V3);
 
 void setup() 
 {
-  //s.begin(9600);
-  //Serial.begin(9600);
-  /*message[0] = CHANGE_MODE;
-  message[1] = AWAY;
-  message2[0] = CHANGE_MODE;
-  message2[1] = LOCKED;
-  message3[0] = CHANGE_WEIGHT_MODE;
-  message3[1] = 100;*/
-
-  //Start Debug Console
-  Serial.begin(9600); 
+  //Start Debug Serial Communications
+  Serial.begin(115200); 
   Blynk.virtualWrite(V3, "clr");  // Terminal Widget
 
+  //Start SmartMat Serial Communication
+  SmartMat.begin(115200);
+  
   //Start Up Message
   Serial.println("NodeMCU: Starting...");
   Blynk.virtualWrite(V3, "NodeMCU: Starting...\n");
