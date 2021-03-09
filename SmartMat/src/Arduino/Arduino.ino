@@ -5,7 +5,7 @@
 #include "pressure_sensors.h"
 
 
-Settings *settings = new Settings(STAYATHOME,POUNDS);
+//Settings *settings = new Settings(STAYATHOME,POUNDS);
  
 void setup()
 {  
