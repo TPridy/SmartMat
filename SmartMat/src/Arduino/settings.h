@@ -10,7 +10,7 @@
 
 //Modes
 #define NONE 0
-#define STAYATHOME 1
+#define HOME 1
 #define AWAY 2
 #define NIGHT 3
 #define LOCKED 4
@@ -20,26 +20,18 @@
 #define KILOGRAMS 1
 #define POUNDS 2
 
-class Settings {
-        
-    //Public
-    public:
-        //Variables
-        char mode;
-        char weight_mode;
+//WiFi Status
+#define DISCONNECTED 0
+#define CONNECTED 1
 
-        //Constructors
-        Settings(char new_mode = NONE,char new_weight_mode = POUNDS);
-        //Methods
-        void updateSettings(char new_mode, char new_weight_mode);
-        //Getters
-        char getMode();
-        char getWeightMode();
-        char getPhoneNumber();
-        //Setters
-        void setMode(char new_mode); 
-        void setWeightMode(char new_weight_mode);
-      
-};
+//Pins
+#define DATA 11
+#define SCLK  10
+
+//Calibration Factor
+#define CALIBRATION_FACTOR -7050.0
+
+//Threshold Value
+#define THRESHOLD 100
 
 #endif
