@@ -120,9 +120,9 @@ int initializeWeightDetection()
     Serial.println("SmartMat: Initializing Accurate Weight Detection Layer...");
 
     //Start up Scale
-    //scale.begin(DATA, SCLK);
-    //scale.set_scale(CALIBRATION_FACTOR);
-    //scale.tare();
+    scale.begin(DATA, SCLK);
+    scale.set_scale(CALIBRATION_FACTOR);
+    scale.tare();
 
     //Return
     return EXIT_SUCCESS;
