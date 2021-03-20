@@ -25,8 +25,8 @@
 #define CONNECTED 1
 
 //Pins
-#define DATA 11
-#define SCLK  10
+#define DATA 13
+#define SCLK  12
 
 //Calibration Factor
 #define CALIBRATION_FACTOR -7050.0
