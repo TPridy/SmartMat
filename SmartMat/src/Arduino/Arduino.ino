@@ -1,6 +1,10 @@
 #include <SoftwareSerial.h>
+#include <SimpleTimer.h>
 #include "settings.h"
 #include "HX711.h"
+
+//Timers
+SimpleTimer timer;
 
 //Settings
 byte mode = HOME;
@@ -12,17 +16,18 @@ SoftwareSerial NodeMCU(7, 8);
 //Scale
 HX711  scale;
 
-//****************************************************
-//Accurate Weight Distribution Settings and Pins     *
-//****************************************************
+//Flags
+byte mode_flag;
 
+//Accurate Weight Detection Variables
+float weight = 0;
+
+//Accurate Weight Distribution Variables    
 int matrix[15][15];   //Value Matrix
 int calibra[15][15];  //Calibration Matrix 
-
 int inByte = 0;
 int valor = 0;
 int minsensor=254;
-
 const boolean muxChannel[15][4]={
     {0,0,0,0}, //channel 0
     {1,0,0,0}, //channel 1
@@ -44,7 +49,7 @@ const boolean muxChannel[15][4]={
 
 
 //****************************************************
-//Modes                                              *
+//Secret Sauce                                       *
 //****************************************************
 void noneModeHandle()
 {
@@ -110,6 +115,11 @@ void alarmModeHandle()
   return;
 }
 
+void checkWeightChange()
+{
+  if (getWeight() >= weight + THRESHOLD)
+}
+
 //****************************************************
 //Accurate Weight Detection                          *
 //****************************************************
@@ -130,12 +140,8 @@ int initializeWeightDetection()
 
 float getWeight()
 {
-    //1 second delay for Last Reading
-    //delay(1000);
-    
     //Get data
     float reading = scale.get_units();
-    //Serial.println(reading,DEC);
     
     //Return weight
     return reading;
@@ -432,28 +438,37 @@ void setup()
                       break;                                                                                
   }
   Serial.print("\n");
+  //Start Timer
+  timer.setInterval(1000, checkWeightChange);
 }
  
 void loop()
 {
-  switch(mode)
-  {
-    case NONE:        noneModeHandle();
-                      break;
-    case HOME:        HomeModeHandle();
-                      break;
-    case AWAY:        awayModeHandle();
-                      break;
-    case NIGHT:       nightModeHandle();
-                      break;
-    case LOCKED:      lockedModeHandle();
-                      break;
-    case ALARM:       alarmModeHandle();
-                      break;
-    default:          noneModeHandle(); 
-                      break;
-  }
+  //Timer call
+  timer.run();
 
+  //Determine Mode Handle
+  if (mode_flag == ON)
+  {
+      switch(mode)
+      {
+        case NONE:        noneModeHandle();
+                          break;
+        case HOME:        HomeModeHandle();
+                          break;
+        case AWAY:        awayModeHandle();
+                          break;
+        case NIGHT:       nightModeHandle();
+                          break;
+        case LOCKED:      lockedModeHandle();
+                          break;
+        case ALARM:       alarmModeHandle();
+                          break;
+        default:          noneModeHandle(); 
+                          break;
+      }
+  }
+  
   //Check for message from NodeMCU
   checkforMessage();
 }
