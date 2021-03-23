@@ -5,8 +5,8 @@
 
 SoftwareSerial SmartMat(D5,D6);
 
-int Mode = HOME;
-int WeightMode = POUNDS;
+int mode = HOME;
+int weight_mode = POUNDS;
 
 /* Blynk */
 #define BLYNK_PRINT Serial
@@ -40,8 +40,6 @@ void setup()
   // Notify immediately on startup
   Blynk.notify("NodeMCU: SmartMat is online.");
   Blynk.virtualWrite(V3, "NodeMCU: SmartMat is online\n");
-
-  
 
 }
  
@@ -96,12 +94,12 @@ BLYNK_WRITE(V2)
   if (param.asInt() == LOCKED) 
   {
     Serial.println("NodeMCU: Locked");
-    Mode == LOCKED;
+    mode == LOCKED;
   } 
   else 
   {
     Serial.println("NodeMCU: Unlocked");
-    Mode == NONE;
+    mode == NONE;
   }
 }
 
@@ -112,10 +110,10 @@ BLYNK_WRITE(V0)
   {
     case HOME:        Serial.println("NodeMCU: Changing mode to HOME...");
                       Blynk.virtualWrite (V3, "NodeMCU: Changing mode to HOME...\n");
-                      Mode = HOME;
+                      mode = HOME;
                       //Send mode change to SmartMat
                       message[0] = '{';
-                      message[1] = 0;
+                      message[1] = CHANGE_MODE;
                       message[2] = HOME;
                       message[3] = '}';
                       SmartMat.write(message,4);
@@ -124,10 +122,10 @@ BLYNK_WRITE(V0)
                       break;
     case AWAY:        Serial.println("NodeMCU: AWAY");
                       Blynk.virtualWrite (V3, "NodeMCU: Changing mode to AWAY...\n");
-                      Mode = AWAY;
+                      mode = AWAY;
                       //Send mode change to SmartMat
                       message[0] = '{';
-                      message[1] = 0;
+                      message[1] = CHANGE_MODE;
                       message[2] = AWAY;
                       message[3] = '}';
                       SmartMat.write(message,4);
@@ -136,10 +134,10 @@ BLYNK_WRITE(V0)
                       break;
     case NIGHT:       Serial.println("NodeMCU: NIGHT");
                       Blynk.virtualWrite (V3, "NodeMCU: Changing mode to NIGHT...\n");
-                      Mode = NIGHT;
+                      mode = NIGHT;
                       //Send mode change to SmartMat
                       message[0] = '{';
-                      message[1] = 0;
+                      message[1] = CHANGE_MODE;
                       message[2] = NIGHT;
                       message[3] = '}';
                       SmartMat.write(message,4);
@@ -148,10 +146,10 @@ BLYNK_WRITE(V0)
                       break;
     case ALARM:       Serial.println("NodeMCU: ALARM");
                       Blynk.virtualWrite (V3, "NodeMCU: Changing mode to ALARM...\n");
-                      Mode = ALARM;
+                      mode = ALARM;
                       //Send mode change to SmartMat;
                       message[0] = '{';
-                      message[1] = 0;
+                      message[1] = CHANGE_MODE;
                       message[2] = ALARM;
                       message[3] = '}';
                       SmartMat.write(message,4);
@@ -160,10 +158,10 @@ BLYNK_WRITE(V0)
                       break;
     case LOCKED:      Serial.println("NodeMCU: LOCKED");
                       Blynk.virtualWrite (V3, "NodeMCU: Changing mode to LOCKED...\n");
-                      Mode = LOCKED;
+                      mode = LOCKED;
                       //Send mode change to SmartMat
                       message[0] = '{';
-                      message[1] = 0;
+                      message[1] = CHANGE_MODE;
                       message[2] = LOCKED;
                       message[3] = '}';
                       SmartMat.write(message,4);
@@ -178,16 +176,29 @@ BLYNK_WRITE(V0)
 
 BLYNK_WRITE(V1)
 {
+  char message[4];
   switch(param.asInt())
   {
     case KILOGRAMS:   Serial.println("NodeMCU: Changing weight mode to KILOGRAMS...");
                       Blynk.virtualWrite (V3, "NodeMCU: Changing weight mode to KILOGRAMS...\n");
-                      WeightMode = KILOGRAMS;
+                      weight_mode = KILOGRAMS;
+                      //Send mode change to SmartMat
+                      message[0] = '{';
+                      message[1] = CHANGE_WEIGHT_MODE;
+                      message[2] = KILOGRAMS;
+                      message[3] = '}';
+                      Serial.println("NodeMCU: Mode changed to KILOGRAMS.");
                       Blynk.virtualWrite (V3, "NodeMCU: Mode changed to KILOGRAMS.\n");
                       break;
     case POUNDS:      Serial.println("NodeMCU: Changing weight mode to POUNDS...");
                       Blynk.virtualWrite (V3, "NodeMCU: Changing weight mode to POUNDS...\n");
-                      WeightMode = POUNDS;
+                      weight_mode = POUNDS;
+                      //Send mode change to SmartMat
+                      message[0] = '{';
+                      message[1] = CHANGE_WEIGHT_MODE;
+                      message[2] = POUNDS;
+                      message[3] = '}';
+                      Serial.println("NodeMCU: Mode changed to POUNDS.");
                       Blynk.virtualWrite (V3, "NodeMCU: Mode changed to POUNDS.\n");
                       break;
     default:          Serial.println("NodeMCU: UNABLE TO DETECT");

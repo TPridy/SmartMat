@@ -20,6 +20,10 @@
 #define KILOGRAMS 1
 #define POUNDS 2
 
+//Messages
+#define CHANGE_MODE 0
+#define CHANGE_WEIGHT_MODE 1
+
 //WiFi Status
 #define DISCONNECTED 0
 #define CONNECTED 1
