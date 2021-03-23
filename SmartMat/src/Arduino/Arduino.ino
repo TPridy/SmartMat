@@ -1,10 +1,6 @@
 #include <SoftwareSerial.h>
-//#include <SimpleTimer.h>
 #include "settings.h"
 #include "HX711.h"
-
-//Timers
-//SimpleTimer timer;
 
 //Settings
 byte mode = HOME;
@@ -115,7 +111,7 @@ void lockedModeHandle()
 
 void alarmModeHandle()
 {
-  Serial.print("SmartMat: ALARM mode activated.\n");
+  Serial.println("SmartMat: ALARM mode activated.");
   //Activate buzzer
   digitalWrite(BUZZER, HIGH);
   //Send test messages to neighbors
@@ -358,7 +354,7 @@ void initializeCommunications()
   Serial.begin(115200); 
   NodeMCU.begin(57600); 
   pinMode(BUZZER, OUTPUT);
-  Serial.print("SmartMat: Initializing Communications...\n");
+  Serial.println("SmartMat: Initializing Communications...");
 }
 
 void decodeMessage(char i)
@@ -473,15 +469,10 @@ void setup()
                       break;                                                                                
   }
   Serial.print("\n");
-  //Start Timer
-  //timer.setInterval(1000, checkWeightChange);
 }
  
 void loop()
 {
-  //Timer call
-  //timer.run();
-
   //Determine Mode Handle
   if (mode_flag == ON)
   {
