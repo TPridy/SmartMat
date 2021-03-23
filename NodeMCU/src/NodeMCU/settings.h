@@ -24,13 +24,22 @@
 #define DISCONNECTED 0
 #define CONNECTED 1
 
+//Flags
+#define OFF 0
+#define ON 1
+
 //Pins
-#define DATA 11
-#define SCLK  10
+#define DATA    13
+#define SCLK    12
+#define BUZZER  10
+#define RX      7
+#define TX      8
 
-//Calibration Factor
+//Weight Detection
 #define CALIBRATION_FACTOR -7050.0
+#define THRESHOLD
 
+//Weight Distribution
 #define s0  A4
 #define s1  A3
 #define s2  A2

@@ -1,10 +1,10 @@
 #include <SoftwareSerial.h>
-#include <SimpleTimer.h>
+//#include <SimpleTimer.h>
 #include "settings.h"
 #include "HX711.h"
 
 //Timers
-SimpleTimer timer;
+//SimpleTimer timer;
 
 //Settings
 byte mode = HOME;
@@ -17,18 +17,18 @@ SoftwareSerial NodeMCU(RX, TX);
 HX711  scale;
 
 //Flags
-byte mode_flag;
+byte mode_flag = OFF;
 
 //Accurate Weight Detection Variables
 float weight = 0;
 
 //Accurate Weight Distribution Variables    
-int matrix[15][15];   //Value Matrix
-int calibra[15][15];  //Calibration Matrix 
-int inByte = 0;
+int matrix[16][16];   //Value Matrix
+int calibra[16][16];  //Calibration Matrix 
+char inBuffer[64];
 int valor = 0;
 int minsensor=254;
-const boolean muxChannel[15][4]={
+const boolean muxChannel[16][4]={
     {0,0,0,0}, //channel 0
     {1,0,0,0}, //channel 1
     {0,1,0,0}, //channel 2
@@ -44,7 +44,7 @@ const boolean muxChannel[15][4]={
     {0,0,1,1}, //channel 12
     {1,0,1,1}, //channel 13
     {0,1,1,1}, //channel 14
-    //{1,1,1,1}  //channel 15
+    {1,1,1,1}  //channel 15
   };
 
 
@@ -53,13 +53,15 @@ const boolean muxChannel[15][4]={
 //****************************************************
 void noneModeHandle()
 {
-  
+  //De-activate buzzer
+  digitalWrite(BUZZER, LOW);
   return;
 }
 
 void HomeModeHandle()
 {
-  
+  //De-activate buzzer
+  digitalWrite(BUZZER, LOW);
   /*
   if (getWeight() > getLastReading() + THRESHOLD)
   {
@@ -71,6 +73,8 @@ void HomeModeHandle()
 
 void awayModeHandle()
 {
+  //De-activate buzzer
+  digitalWrite(BUZZER, LOW);
   //Serial.print("AWAY\n");
   /*
   if (getWeight() > THRESHOLD)
@@ -83,6 +87,8 @@ void awayModeHandle()
 
 void nightModeHandle()
 {
+  //De-activate buzzer
+  digitalWrite(BUZZER, LOW);
   //Serial.print("NIGHT\n");
   /*
   if (getWeight() > THRESHOLD)
@@ -95,7 +101,8 @@ void nightModeHandle()
 
 void lockedModeHandle()
 {
-  //Serial.print("LOCKED\n");
+  //De-activate buzzer
+  digitalWrite(BUZZER, LOW);
   /*
   if (getWeight() < getLastReading() - THRESHOLD)
   {
@@ -108,16 +115,19 @@ void lockedModeHandle()
 
 void alarmModeHandle()
 {
-  //Serial.print("ALARM\n");
-  //Set timer so can only be in alarm mode for specified time
-  //ACtivate buzzer
+  Serial.print("SmartMat: ALARM mode activated.\n");
+  //Activate buzzer
+  digitalWrite(BUZZER, HIGH);
   //Send test messages to neighbors
   return;
 }
 
 void checkWeightChange()
 {
-  if (getWeight() >= weight + THRESHOLD)
+  /*if (getWeight() >= weight + THRESHOLD)
+  {
+    
+  }*/
 }
 
 //****************************************************
@@ -307,16 +317,34 @@ void printAccurateWeightDistributionMatrix()
 //****************************************************
 
 void checkforMessage()
-{
-  if (Serial.available() > 0)
+{ 
+  if (NodeMCU.available() > 0)
   {
-    inByte = Serial.read();
-    
-    if(inByte == 'A')
+    inBuffer[0] = NodeMCU.read();
+    byte done = OFF;
+    byte i = 0;
+
+    if(inBuffer[0] == '{')
     {
-      getAcuurateWeightDistributionMatrx();
-      printAccurateWeightDistributionMatrix();
-    } 
+      Serial.println("SmartMat: Received a Message from NodeMCU");
+      delay(1000);
+      while((done == OFF) && (NodeMCU.available() > 0))
+      {
+        inBuffer[i+1] = NodeMCU.read();
+        if (inBuffer[i+1] == '}')
+        {
+          done = ON;
+        }
+        i = i+1;
+      }
+      /*for (byte t = 0; t < i+1; t++)
+      {
+        Serial.print(inBuffer[t]);
+      }
+      Serial.print("\n");*/
+      decodeMessage(i);
+    }
+ 
   }
 }
 
@@ -328,52 +356,58 @@ void initializeCommunications()
   default baud rate will be 9600.
   */
   Serial.begin(115200); 
-  NodeMCU.begin(115200); 
+  NodeMCU.begin(57600); 
   pinMode(BUZZER, OUTPUT);
   Serial.print("SmartMat: Initializing Communications...\n");
 }
-/*
-void decodeMessage(const char *message,char length,Settings *settings)
+
+void decodeMessage(char i)
 {
     /*
     This is where the message received from the NodeMCU 
     will be decoded to determine what to do.
-    *//*
-    switch(message[0])
+    */
+    switch(inBuffer[1])
     {
-      case CHANGE_MODE:
-        switch(message[1]) 
+      case 0:
+        switch(inBuffer[2]) 
         {
           case NONE:        Serial.println("SmartMat: Changing mode to NONE...");
                             mode = NONE;
+                            mode_flag = ON;
                             break;
-          case HOME:  Serial.println("SmartMat: Changing mode to HOME...");
+          case HOME:        Serial.println("SmartMat: Changing mode to HOME...");
                             mode = HOME;
+                            mode_flag = ON;
                             break;
           case AWAY:        Serial.println("SmartMat: Changing mode to AWAY...");
                             mode = AWAY;
+                            mode_flag = ON;
                             break;
           case NIGHT:       Serial.println("SmartMat: Changing mode to NIGHT...");
                             mode = NIGHT;
+                            mode_flag = ON;
                             break;
           case LOCKED:      Serial.println("SmartMat: Changing mode to LOCKED...");
                             mode = LOCKED;
+                            mode_flag = ON;
                             break;
           case ALARM:       Serial.println("SmartMat: Changing mode to ALARM...");
                             mode = ALARM;
+                            mode_flag = ON;
                             break;
           default:          Serial.println("ERROR: Did not recognize mode to change to...");
                             break;                                                                                
         }
         break;
-      case CHANGE_WEIGHT_MODE:
-        switch(message[1])
+      case 1:
+        switch(inBuffer[2])
         {
           case KILOGRAMS:   Serial.println("SmartMat: Changing weight mode to KILOGRAMS...");
-                            settings->setWeightMode(KILOGRAMS);
+                            weight_mode = KILOGRAMS;
                             break;
           case POUNDS:      Serial.println("SmartMat: Changing weight mode to POUNDS...");
-                            settings->setWeightMode(POUNDS);
+                            weight_mode = POUNDS;
                             break;
           default:          Serial.println("ERROR: Did not recognize weight mode to change to...");
                             break;                                                                                
@@ -381,11 +415,11 @@ void decodeMessage(const char *message,char length,Settings *settings)
         break;
       default:  
         Serial.print("ERROR: Cannot decode the message -> ");
-        Serial.println(message);
+        Serial.println(inBuffer);
         break;
     }
     return;
-}*/
+}
 
 
 //****************************************************
@@ -440,13 +474,13 @@ void setup()
   }
   Serial.print("\n");
   //Start Timer
-  timer.setInterval(1000, checkWeightChange);
+  //timer.setInterval(1000, checkWeightChange);
 }
  
 void loop()
 {
   //Timer call
-  timer.run();
+  //timer.run();
 
   //Determine Mode Handle
   if (mode_flag == ON)
@@ -468,6 +502,7 @@ void loop()
         default:          noneModeHandle(); 
                           break;
       }
+      mode_flag = OFF;
   }
   
   //Check for message from NodeMCU
