@@ -11,7 +11,7 @@ byte mode = HOME;
 byte weight_mode = POUNDS;
 
 //NodeMCU
-SoftwareSerial NodeMCU(7, 8); 
+SoftwareSerial NodeMCU(RX, TX); 
 
 //Scale
 HX711  scale;
@@ -329,6 +329,7 @@ void initializeCommunications()
   */
   Serial.begin(115200); 
   NodeMCU.begin(115200); 
+  pinMode(BUZZER, OUTPUT);
   Serial.print("SmartMat: Initializing Communications...\n");
 }
 /*
@@ -395,12 +396,12 @@ void setup()
 {  
   //Start the software serial for communication with the NodeMCU
   initializeCommunications();
-  if (initializeWeightDetection() == EXIT_FAILURE)
+  /*if (initializeWeightDetection() == EXIT_FAILURE)
   {
     Serial.println("SmartMat: Accurate Weight Detection Layer failed to initialize.");
     while(1);
   }
-  /*if (initializeWeightDistribution() == EXIT_FAILURE)
+  if (initializeWeightDistribution() == EXIT_FAILURE)
   {
     Serial.println("SmartMat: Accurate Weight Distribution Layer failed to initialize.");
     while(1);

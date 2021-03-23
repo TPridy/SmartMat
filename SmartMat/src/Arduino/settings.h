@@ -29,8 +29,11 @@
 #define ON 1
 
 //Pins
-#define DATA 13
-#define SCLK  12
+#define DATA    13
+#define SCLK    12
+#define BUZZER  10
+#define RX      7
+#define TX      8
 
 //Weight Detection
 #define CALIBRATION_FACTOR -7050.0
