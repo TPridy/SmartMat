@@ -36,8 +36,8 @@
 #define TX      8
 
 //Weight Detection
-#define CALIBRATION_FACTOR -7050.0
-#define THRESHOLD
+#define CALIBRATION_FACTOR - -11098.0
+#define  THRESHOLD  3
 
 //Weight Distribution
 #define s0  A4

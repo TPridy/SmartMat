@@ -54,16 +54,26 @@ void noneModeHandle()
   return;
 }
 
-void HomeModeHandle()
+void homeModeHandle()
 {
   //De-activate buzzer
   digitalWrite(BUZZER, LOW);
-  /*
-  if (getWeight() > getLastReading() + THRESHOLD)
+
+  Serial.print("Weight ->");
+  float new_weight = getWeight();
+  Serial.println(weight);
+  
+  if (new_weight > weight + THRESHOLD)
   {
-    //Send Notifcation that there is weight on the mat
+    Serial.println("Caught");
+    mode = ALARM;
+    mode_flag = ON;
   }
-  */
+  else
+  {
+    weight = new_weight;
+  }
+  
   return;
 }
 
@@ -120,10 +130,24 @@ void alarmModeHandle()
 
 void checkWeightChange()
 {
-  /*if (getWeight() >= weight + THRESHOLD)
+  float new_weight = getWeight();
+  Serial.print("Weight->");
+  Serial.println(new_weight);
+  if ((new_weight > weight + THRESHOLD) || (new_weight < weight - THRESHOLD))
   {
-    
-  }*/
+    switch(mode)
+    {
+      case LOCKED:    mode = ALARM;
+                      mode_flag = ON;
+                      weight = new_weight;
+                      break;
+      default:        break;
+    }
+  }
+  else
+  {
+    weight = new_weight;
+  }
 }
 
 //****************************************************
@@ -426,12 +450,12 @@ void setup()
 {  
   //Start the software serial for communication with the NodeMCU
   initializeCommunications();
-  /*if (initializeWeightDetection() == EXIT_FAILURE)
+  if (initializeWeightDetection() == EXIT_FAILURE)
   {
     Serial.println("SmartMat: Accurate Weight Detection Layer failed to initialize.");
     while(1);
   }
-  if (initializeWeightDistribution() == EXIT_FAILURE)
+  /*if (initializeWeightDistribution() == EXIT_FAILURE)
   {
     Serial.println("SmartMat: Accurate Weight Distribution Layer failed to initialize.");
     while(1);
@@ -476,11 +500,12 @@ void loop()
   //Determine Mode Handle
   if (mode_flag == ON)
   {
+      mode_flag = OFF;
       switch(mode)
       {
         case NONE:        noneModeHandle();
                           break;
-        case HOME:        HomeModeHandle();
+        case HOME:        homeModeHandle();
                           break;
         case AWAY:        awayModeHandle();
                           break;
@@ -493,9 +518,12 @@ void loop()
         default:          noneModeHandle(); 
                           break;
       }
-      mode_flag = OFF;
   }
   
   //Check for message from NodeMCU
   checkforMessage();
+
+  //Check for Weight Change
+  delay(1000);
+  checkWeightChange();
 }
