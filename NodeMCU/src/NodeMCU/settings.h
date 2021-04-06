@@ -23,6 +23,8 @@
 //Messages
 #define CHANGE_MODE 0
 #define CHANGE_WEIGHT_MODE 1
+#define SEND_NOTIFICATION 2
+#define LIVE_STREAM_WEIGHT 3
 
 //WiFi Status
 #define DISCONNECTED 0

@@ -17,53 +17,9 @@ char pass[] = "tommyp54";
 //Attach virtual serial terminal to Virtual Pin V3
 WidgetTerminal terminal(V3);
 
-void setup() 
-{
-  //Start Serial Communications
-  Serial.begin(115200); 
-  SmartMat.begin(57600);
-  
-  //Start Up Message
-  Serial.println("NodeMCU: Starting...");
-  
-  //Connect to SmartPhone Application
-  Serial.println("NodeMCU: Establishing Network Connection...");
-  Blynk.begin(auth, ssid, pass);
+char inBuffer[64];
 
-  //Clear Virtual Terminal
-  terminal.clear(); 
-  
-  Serial.println("NodeMCU: Network Connection established.");
-  terminal.println("NodeMCU: Connection established.");
-  
-  // Notify immediately on startup
-  Blynk.notify("NodeMCU: SmartMat is online.");
-  terminal.println("NodeMCU: SmartMat is online.");
-}
- 
-void loop() 
-{
 
-  //Check for connection Status
-  if (Blynk.connected() == CONNECTED)
-  {
-    Blynk.run();
-  }
-  else
-  {
-    Serial.println("NodeMCU: Reconnecting...");
-    if (Blynk.connect() == CONNECTED)
-    {
-      Serial.println("NodeMCU: Failed to reconnect.");
-    }
-    else
-    {
-      Serial.println("NodeMCU: Reconnected!");
-    }
-    delay(5000);
-  }
-  
-}
 
 //****************************************************
 //BLYNK                                              *
@@ -195,5 +151,118 @@ BLYNK_WRITE(V1)
                         break;
     }
   }
+}
+
+//****************************************************
+//UART Communication                                 *
+//****************************************************
+
+void checkforMessage()
+{ 
+  if (SmartMat.available() > 0)
+  {
+    inBuffer[0] = SmartMat.read();
+    byte done = OFF;
+    byte i = 0;
+
+    if(inBuffer[0] == '{')
+    {
+      Serial.println("NodeMCU: Received a Message from NodeMCU");
+      delay(1000);
+      while((done == OFF) && (SmartMat.available() > 0))
+      {
+        inBuffer[i+1] = SmartMat.read();
+        if (inBuffer[i+1] == '}')
+        {
+          done = ON;
+        }
+        i = i+1;
+      }
+      /*for (byte t = 0; t < i+1; t++)
+      {
+        Serial.print(inBuffer[t]);
+      }
+      Serial.print("\n");*/
+      decodeMessage(i);
+    }
+ 
+  }
+}
+
+void decodeMessage(char i)
+{
+    /*
+    This is where the message received from the NodeMCU 
+    will be decoded to determine what to do.
+    */
+    switch(inBuffer[1])
+    {
+      case SEND_NOTIFICATION:
+        switch(inBuffer[2]) 
+        {
+          case 0:           Serial.println("Sending Notification...");
+                            Blynk.notify("There has been a problem ");
+                            break;
+          default:          Serial.println("ERROR");
+                            break;                                                                                
+        }
+        break;
+      default:  
+        Serial.print("ERROR: Cannot decode the message -> ");
+        Serial.println(inBuffer);
+        break;
+    }
+    return;
+}
+
+void setup() 
+{
+  //Start Serial Communications
+  Serial.begin(115200); 
+  SmartMat.begin(57600);
+  
+  //Start Up Message
+  Serial.println("NodeMCU: Starting...");
+  
+  //Connect to SmartPhone Application
+  Serial.println("NodeMCU: Establishing Network Connection...");
+  Blynk.begin(auth, ssid, pass);
+
+  //Clear Virtual Terminal
+  terminal.clear(); 
+  
+  Serial.println("NodeMCU: Network Connection established.");
+  terminal.println("NodeMCU: Connection established.");
+  
+  // Notify immediately on startup
+  Blynk.notify("NodeMCU: SmartMat is online.");
+  terminal.println("NodeMCU: SmartMat is online.");
+}
+ 
+void loop() 
+{
+
+  //Check for connection Status
+  if (Blynk.connected() == CONNECTED)
+  {
+    Blynk.run();
+  }
+  else
+  {
+    Serial.println("NodeMCU: Reconnecting...");
+    if (Blynk.connect() == CONNECTED)
+    {
+      Serial.println("NodeMCU: Failed to reconnect.");
+    }
+    else
+    {
+      Serial.println("NodeMCU: Reconnected!");
+    }
+    delay(5000);
+  }
+
+  //Check for Message
+  checkforMessage();
+  
 }
  

@@ -389,7 +389,7 @@ void decodeMessage(char i)
     */
     switch(inBuffer[1])
     {
-      case 0:
+      case CHANGE_MODE:
         switch(inBuffer[2]) 
         {
           case NONE:        Serial.println("SmartMat: Changing mode to NONE...");
@@ -450,12 +450,12 @@ void setup()
 {  
   //Start the software serial for communication with the NodeMCU
   initializeCommunications();
-  if (initializeWeightDetection() == EXIT_FAILURE)
+  /*if (initializeWeightDetection() == EXIT_FAILURE)
   {
     Serial.println("SmartMat: Accurate Weight Detection Layer failed to initialize.");
     while(1);
   }
-  /*if (initializeWeightDistribution() == EXIT_FAILURE)
+  if (initializeWeightDistribution() == EXIT_FAILURE)
   {
     Serial.println("SmartMat: Accurate Weight Distribution Layer failed to initialize.");
     while(1);
@@ -523,7 +523,15 @@ void loop()
   //Check for message from NodeMCU
   checkforMessage();
 
+  char message[4];
+  message[0] = '{';
+  message[1] = SEND_NOTIFICATION;
+  message[2] = 0;
+  message[3] = '}';
+
+  NodeMCU.write(message,4);
+
   //Check for Weight Change
-  delay(1000);
-  checkWeightChange();
+  //delay(1000);
+  //checkWeightChange();
 }

@@ -20,6 +20,11 @@
 #define KILOGRAMS 1
 #define POUNDS 2
 
+//Messages
+#define CHANGE_MODE 0
+#define CHANGE_WEIGHT_MODE 1
+#define SEND_NOTIFICATION 2
+
 //WiFi Status
 #define DISCONNECTED 0
 #define CONNECTED 1
@@ -36,8 +41,8 @@
 #define TX      8
 
 //Weight Detection
-#define CALIBRATION_FACTOR - -11098.0
-#define  THRESHOLD  3
+#define CALIBRATION_FACTOR -7050.0
+#define THRESHOLD 3
 
 //Weight Distribution
 #define s0  A4
