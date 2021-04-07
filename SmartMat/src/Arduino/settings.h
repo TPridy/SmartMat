@@ -20,10 +20,20 @@
 #define KILOGRAMS 1
 #define POUNDS 2
 
+//Identifcation
+#define PACKAGE 1
+#define PERSON  2
+
 //Messages
 #define CHANGE_MODE 0
 #define CHANGE_WEIGHT_MODE 1
-#define SEND_NOTIFICATION 2
+#define NOTIFICATIONS 3
+
+// Notifications
+#define SEND_NOTIFICATION 0
+#define SEND_EMAIL 1
+#define DONT_SEND 2
+#define LIVE_STREAM_WEIGHT 3
 
 //WiFi Status
 #define DISCONNECTED 0
@@ -42,7 +52,7 @@
 
 //Weight Detection
 #define CALIBRATION_FACTOR -7050.0
-#define THRESHOLD 3
+#define THRESHOLD 1
 
 //Weight Distribution
 #define s0  A4

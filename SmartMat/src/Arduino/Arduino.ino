@@ -4,7 +4,8 @@
 
 //Settings
 byte mode = HOME;
-byte weight_mode = POUNDS;
+byte weight_mode = KILOGRAMS;
+byte notifications = DONT_SEND;
 
 //NodeMCU
 SoftwareSerial NodeMCU(RX, TX); 
@@ -420,7 +421,7 @@ void decodeMessage(char i)
                             break;                                                                                
         }
         break;
-      case 1:
+      case CHANGE_WEIGHT_MODE:
         switch(inBuffer[2])
         {
           case KILOGRAMS:   Serial.println("SmartMat: Changing weight mode to KILOGRAMS...");
@@ -429,6 +430,25 @@ void decodeMessage(char i)
           case POUNDS:      Serial.println("SmartMat: Changing weight mode to POUNDS...");
                             weight_mode = POUNDS;
                             break;
+          default:          Serial.println("ERROR: Did not recognize weight mode to change to...");
+                            break;                                                                                
+        }
+        break;
+      case NOTIFICATIONS:
+        switch(inBuffer[2])
+        {
+          case LIVE_STREAM_WEIGHT:    Serial.println("SmartMat: Changing notification mode to LIVE_STREAM_WEIGHT...");
+                                      notifications = LIVE_STREAM_WEIGHT;
+                                      break;
+          case SEND_NOTIFICATION:     Serial.println("SmartMat: Changing notification to SEND_NOTIFICATION...");
+                                      notifications = SEND_NOTIFICATION;
+                                      break;
+          case SEND_EMAIL:            Serial.println("SmartMat: Changing notification to SEND_EMAIL...");
+                                      notifications = SEND_EMAIL;
+                                      break;
+          case DONT_SEND:             Serial.println("SmartMat: Changing notification to DONT_SEND...");
+                                      notifications = DONT_SEND;
+                                      break;
           default:          Serial.println("ERROR: Did not recognize weight mode to change to...");
                             break;                                                                                
         }
@@ -492,6 +512,20 @@ void setup()
     default:          Serial.println("\nERROR: Did not recognize mode...");
                       break;                                                                                
   }
+  Serial.print("Notifications Mode: ");
+  switch(notifications) 
+  {
+    case LIVE_STREAM_WEIGHT:             Serial.println("LIVE STREAM");
+                                         break;
+    case SEND_NOTIFICATION:             Serial.println("TEXT");
+                                         break;
+    case SEND_EMAIL:                     Serial.println("EMAIL");
+                                         break; 
+    case DONT_SEND:                     Serial.println("NO MESSAGE");
+                                         break;                                                                 
+    default:          Serial.println("\nERROR: Did not recognize mode...");
+                      break;                                                                                
+  }
   Serial.print("\n");
 }
  
@@ -524,14 +558,36 @@ void loop()
   checkforMessage();
 
   char message[4];
+  float test_weight;
+  test_weight = 1134.23;
+  switch(weight_mode)
+  {
+    case KILOGRAMS: test_weight = test_weight/1000;
+                    break;
+    case POUNDS:    test_weight = test_weight*0.00220462;
+                    break;
+    default:        break;
+  }
+  String string = String(test_weight);
   message[0] = '{';
-  message[1] = SEND_NOTIFICATION;
-  message[2] = 0;
-  message[3] = '}';
+  message[1] = NOTIFICATIONS;
+  message[2] = SEND_NOTIFICATION;
+  message[3] = PERSON;
+  message[4] = string[0];
+  message[5] = string[1];
+  message[6] = string[2];
+  message[7] = string[3];
+  message[8] = string[4];
+  message[9] = string[5];
+  message[10] = string[6];
+  message[11] = string[7];
+  message[12] = '}';
+  
+  //strcpy(&message[3],&string,6);
 
-  NodeMCU.write(message,4);
+  NodeMCU.write(message,13);
 
   //Check for Weight Change
-  //delay(1000);
+  delay(10000);
   //checkWeightChange();
 }
