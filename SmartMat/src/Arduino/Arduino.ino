@@ -82,6 +82,7 @@ void awayModeHandle()
 {
   //De-activate buzzer
   digitalWrite(BUZZER, LOW);
+  
   //Serial.print("AWAY\n");
   /*
   if (getWeight() > THRESHOLD)
@@ -96,6 +97,7 @@ void nightModeHandle()
 {
   //De-activate buzzer
   digitalWrite(BUZZER, LOW);
+  
   //Serial.print("NIGHT\n");
   /*
   if (getWeight() > THRESHOLD)
@@ -110,6 +112,7 @@ void lockedModeHandle()
 {
   //De-activate buzzer
   digitalWrite(BUZZER, LOW);
+  
   /*
   if (getWeight() < getLastReading() - THRESHOLD)
   {
@@ -317,20 +320,63 @@ void getAcuurateWeightDistributionMatrx()
 void printAccurateWeightDistributionMatrix()
 {
   for(int j = 0; j < 15; j++)
-      { 
-        for(int i = 0; i < 15; i++)
-        {
-          Serial.print(matrix[j][i]);
-          Serial.print("\t");
-          if (i == 14)
-          {
-            Serial.print("\n");
-          }
-        } 
+  { 
+    for(int i = 0; i < 15; i++)
+    {
+      Serial.print(matrix[j][i]);
+      Serial.print("\t");
+      if (i == 14)
+      {
+        Serial.print("\n");
       }
-      Serial.print("\n");
-      Serial.print("\n");
-      Serial.print("\n");
+    } 
+  }
+  Serial.print("\n");
+  Serial.print("\n");
+  Serial.print("\n");
+}
+
+char detectionAlgorithm()
+{
+  int max_num1 = 0;
+  int x1,y1 = 0;
+  int max_num2 = 0;
+  int x2,y2 = 0;
+  
+  for(int j = 0; j < 15; j++)
+  { 
+    for(int i = 0; i < 15; i++)
+    {
+      if ((matrix[j][i] > max_num1) && (matrix[j][i] > 0))
+      {
+        max_num1 = matrix[j][i];
+        x1 = j;
+        y1 = i;
+      }
+    } 
+  }
+  for(int j = 0; j < 15; j++)
+  { 
+    for(int i = 0; i < 15; i++)
+    {
+      if ((matrix[j][i] > max_num2) && (matrix[j][i] > 0) && (j != x1) && (i != y1))
+      {
+        if (((j >= x1 + 3) || (j <= x1 - 3)) && ((i >= y1 + 3) || (i <= y1 - 3)))
+        {
+          max_num2 = matrix[j][i];
+          x2 = j;
+          y2 = i;
+        }
+      }
+    } 
+  }
+  Serial.println(max_num1);
+  Serial.println(x1);
+  Serial.println(y1);
+  Serial.println(max_num2);
+  Serial.println(x2);
+  Serial.println(y2);
+
 }
 
 //****************************************************
@@ -463,23 +509,10 @@ void decodeMessage(char i)
 
 
 //****************************************************
-//Main Loop                                          *
+//General                                            *
 //****************************************************
-
-void setup()
-{  
-  //Start the software serial for communication with the NodeMCU
-  initializeCommunications();
-  /*if (initializeWeightDetection() == EXIT_FAILURE)
-  {
-    Serial.println("SmartMat: Accurate Weight Detection Layer failed to initialize.");
-    while(1);
-  }
-  if (initializeWeightDistribution() == EXIT_FAILURE)
-  {
-    Serial.println("SmartMat: Accurate Weight Distribution Layer failed to initialize.");
-    while(1);
-  }*/
+void printBanner()
+{
   Serial.println("SmartMat: SmartMat Initialization Complete");
   Serial.print("\n");
   Serial.println("            SmartMat             ");
@@ -517,16 +550,48 @@ void setup()
   {
     case LIVE_STREAM_WEIGHT:             Serial.println("LIVE STREAM");
                                          break;
-    case SEND_NOTIFICATION:             Serial.println("TEXT");
+    case SEND_NOTIFICATION:              Serial.println("TEXT");
                                          break;
     case SEND_EMAIL:                     Serial.println("EMAIL");
                                          break; 
-    case DONT_SEND:                     Serial.println("NO MESSAGE");
+    case DONT_SEND:                      Serial.println("NO MESSAGE");
                                          break;                                                                 
     default:          Serial.println("\nERROR: Did not recognize mode...");
                       break;                                                                                
   }
   Serial.print("\n");
+}
+
+//****************************************************
+//Main Loop                                          *
+//****************************************************
+
+void setup()
+{  
+  //Start the software serial for communication with the NodeMCU
+  initializeCommunications();
+  printBanner();
+  /*if (initializeWeightDetection() == EXIT_FAILURE)
+  {
+    Serial.println("SmartMat: Accurate Weight Detection Layer failed to initialize.");
+    while(1);
+  }
+  if (initializeWeightDistribution() == EXIT_FAILURE)
+  {
+    Serial.println("SmartMat: Accurate Weight Distribution Layer failed to initialize.");
+    while(1);
+  }*/
+  for(int q = 0; q < 15; q++)
+  { 
+    for(int w = 0; w < 15; w++)
+    {
+      matrix[q][w] = 0;
+    } 
+  }
+  matrix[4][9] = 45;
+  matrix[0][8] = 42;
+  detectionAlgorithm();
+
 }
  
 void loop()
@@ -557,7 +622,7 @@ void loop()
   //Check for message from NodeMCU
   checkforMessage();
 
-  char message[4];
+  /*char message[4];
   float test_weight;
   test_weight = 1134.23;
   switch(weight_mode)
@@ -589,5 +654,5 @@ void loop()
 
   //Check for Weight Change
   delay(10000);
-  //checkWeightChange();
+  //checkWeightChange();*/
 }
