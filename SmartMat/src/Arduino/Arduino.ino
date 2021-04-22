@@ -1,11 +1,17 @@
 #include <SoftwareSerial.h>
 #include "settings.h"
 #include "HX711.h"
+#include "SimpleTimer.h"
 
 //Settings
 byte mode = HOME;
-byte weight_mode = KILOGRAMS;
+byte weight_mode = POUNDS;
 byte notifications = DONT_SEND;
+
+//Communication
+char inBuffer[64];
+int buffer_len = 0;
+byte uart_flag = 0;
 
 //NodeMCU
 SoftwareSerial NodeMCU(RX, TX); 
@@ -22,7 +28,7 @@ float weight = 0;
 //Accurate Weight Distribution Variables    
 int matrix[16][16];   //Value Matrix
 int calibra[16][16];  //Calibration Matrix 
-char inBuffer[64];
+
 int valor = 0;
 int minsensor=254;
 const boolean muxChannel[16][4]={
@@ -44,6 +50,25 @@ const boolean muxChannel[16][4]={
     {1,1,1,1}  //channel 15
   };
 
+//UART Communication
+byte length_buffer = 0;
+
+SimpleTimer receiveTimer(1000);
+SimpleTimer timer(30000);
+
+
+void testWrite()
+{
+  char message[5];
+  
+  message[0] = '{';
+  message[1] = NOTIFICATIONS;
+  message[2] = SEND_NOTIFICATION;
+  message[3] = 't';
+  message[4] = '}';
+
+  NodeMCU.write(message,5);
+}
 
 //****************************************************
 //Secret Sauce                                       *
@@ -341,31 +366,22 @@ void checkforMessage()
 { 
   if (NodeMCU.available() > 0)
   {
-    inBuffer[0] = NodeMCU.read();
-    byte done = OFF;
-    byte i = 0;
-
-    if(inBuffer[0] == '{')
+    byte inByte = NodeMCU.read();
+    if (inByte == '{')
     {
-      Serial.println("SmartMat: Received a Message from NodeMCU");
-      delay(1000);
-      while((done == OFF) && (NodeMCU.available() > 0))
-      {
-        inBuffer[i+1] = NodeMCU.read();
-        if (inBuffer[i+1] == '}')
-        {
-          done = ON;
-        }
-        i = i+1;
-      }
-      /*for (byte t = 0; t < i+1; t++)
-      {
-        Serial.print(inBuffer[t]);
-      }
-      Serial.print("\n");*/
-      decodeMessage(i);
+      Serial.println("SmartMat: Incoming Message from NodeMCU");
+      uart_flag = 1;
+      receiveTimer.reset();
     }
- 
+    else if ((inByte == '}') && (uart_flag == 1))
+    {
+      uart_flag = 2;
+    }
+    else
+    {
+      inBuffer[buffer_len] = inByte;
+      buffer_len++;
+    }
   }
 }
 
@@ -382,47 +398,47 @@ void initializeCommunications()
   Serial.println("SmartMat: Initializing Communications...");
 }
 
-void decodeMessage(char i)
+void decodeMessage()
 {
     /*
     This is where the message received from the NodeMCU 
     will be decoded to determine what to do.
     */
-    switch(inBuffer[1])
+    switch(inBuffer[0])
     {
       case CHANGE_MODE:
-        switch(inBuffer[2]) 
+        switch(inBuffer[1]) 
         {
           case NONE:        Serial.println("SmartMat: Changing mode to NONE...");
                             mode = NONE;
-                            mode_flag = ON;
+                            //mode_flag = ON;
                             break;
           case HOME:        Serial.println("SmartMat: Changing mode to HOME...");
                             mode = HOME;
-                            mode_flag = ON;
+                            //mode_flag = ON;
                             break;
           case AWAY:        Serial.println("SmartMat: Changing mode to AWAY...");
                             mode = AWAY;
-                            mode_flag = ON;
+                            //mode_flag = ON;
                             break;
           case NIGHT:       Serial.println("SmartMat: Changing mode to NIGHT...");
                             mode = NIGHT;
-                            mode_flag = ON;
+                            //mode_flag = ON;
                             break;
           case LOCKED:      Serial.println("SmartMat: Changing mode to LOCKED...");
                             mode = LOCKED;
-                            mode_flag = ON;
+                            //mode_flag = ON;
                             break;
           case ALARM:       Serial.println("SmartMat: Changing mode to ALARM...");
                             mode = ALARM;
-                            mode_flag = ON;
+                            //mode_flag = ON;
                             break;
           default:          Serial.println("ERROR: Did not recognize mode to change to...");
                             break;                                                                                
         }
         break;
       case CHANGE_WEIGHT_MODE:
-        switch(inBuffer[2])
+        switch(inBuffer[1])
         {
           case KILOGRAMS:   Serial.println("SmartMat: Changing weight mode to KILOGRAMS...");
                             weight_mode = KILOGRAMS;
@@ -434,31 +450,17 @@ void decodeMessage(char i)
                             break;                                                                                
         }
         break;
-      case NOTIFICATIONS:
-        switch(inBuffer[2])
-        {
-          case LIVE_STREAM_WEIGHT:    Serial.println("SmartMat: Changing notification mode to LIVE_STREAM_WEIGHT...");
-                                      notifications = LIVE_STREAM_WEIGHT;
-                                      break;
-          case SEND_NOTIFICATION:     Serial.println("SmartMat: Changing notification to SEND_NOTIFICATION...");
-                                      notifications = SEND_NOTIFICATION;
-                                      break;
-          case SEND_EMAIL:            Serial.println("SmartMat: Changing notification to SEND_EMAIL...");
-                                      notifications = SEND_EMAIL;
-                                      break;
-          case DONT_SEND:             Serial.println("SmartMat: Changing notification to DONT_SEND...");
-                                      notifications = DONT_SEND;
-                                      break;
-          default:          Serial.println("ERROR: Did not recognize weight mode to change to...");
-                            break;                                                                                
-        }
-        break;
       default:  
         Serial.print("ERROR: Cannot decode the message -> ");
-        Serial.println(inBuffer);
+        for (byte q = 0; q < buffer_len; q++)
+        {
+          Serial.print(inBuffer[q]);
+        }
+        Serial.println("");
         break;
     }
-    return;
+    buffer_len = 0;
+    uart_flag = 0;
 }
 
 
@@ -470,6 +472,7 @@ void setup()
 {  
   //Start the software serial for communication with the NodeMCU
   initializeCommunications();
+  
   /*if (initializeWeightDetection() == EXIT_FAILURE)
   {
     Serial.println("SmartMat: Accurate Weight Detection Layer failed to initialize.");
@@ -515,16 +518,14 @@ void setup()
   Serial.print("Notifications Mode: ");
   switch(notifications) 
   {
-    case LIVE_STREAM_WEIGHT:             Serial.println("LIVE STREAM");
-                                         break;
-    case SEND_NOTIFICATION:             Serial.println("TEXT");
-                                         break;
-    case SEND_EMAIL:                     Serial.println("EMAIL");
-                                         break; 
-    case DONT_SEND:                     Serial.println("NO MESSAGE");
-                                         break;                                                                 
-    default:          Serial.println("\nERROR: Did not recognize mode...");
-                      break;                                                                                
+    case SEND_NOTIFICATION: Serial.println("TEXT");
+                            break;
+    case SEND_EMAIL:        Serial.println("EMAIL");
+                            break; 
+    case DONT_SEND:         Serial.println("NO MESSAGE");
+                            break;                                                                 
+    default:                Serial.println("\nERROR: Did not recognize mode...");
+                            break;                                                                                
   }
   Serial.print("\n");
 }
@@ -556,38 +557,22 @@ void loop()
   
   //Check for message from NodeMCU
   checkforMessage();
-
-  char message[4];
-  float test_weight;
-  test_weight = 1134.23;
-  switch(weight_mode)
+  if (uart_flag == 2)
   {
-    case KILOGRAMS: test_weight = test_weight/1000;
-                    break;
-    case POUNDS:    test_weight = test_weight*0.00220462;
-                    break;
-    default:        break;
+    decodeMessage();
   }
-  String string = String(test_weight);
-  message[0] = '{';
-  message[1] = NOTIFICATIONS;
-  message[2] = SEND_NOTIFICATION;
-  message[3] = PERSON;
-  message[4] = string[0];
-  message[5] = string[1];
-  message[6] = string[2];
-  message[7] = string[3];
-  message[8] = string[4];
-  message[9] = string[5];
-  message[10] = string[6];
-  message[11] = string[7];
-  message[12] = '}';
-  
-  //strcpy(&message[3],&string,6);
-
-  NodeMCU.write(message,13);
+  if (timer.isReady())
+  {
+    //testWrite();
+    timer.reset();
+  }
+  if ((receiveTimer.isReady()) && (uart_flag == 1))
+  {
+    uart_flag = 0;
+    buffer_len = 0;
+    Serial.println("SmartMat: Dropping Message...");
+  }
 
   //Check for Weight Change
-  delay(10000);
   //checkWeightChange();
 }
