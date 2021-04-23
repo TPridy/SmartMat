@@ -8,27 +8,16 @@ byte mode = HOME;
 byte weight_mode = POUNDS;
 byte notifications = DONT_SEND;
 
-//Communication
-char inBuffer[64];
-int buffer_len = 0;
-byte uart_flag = 0;
-
-//NodeMCU
-SoftwareSerial NodeMCU(RX, TX); 
-
-//Scale
-HX711  scale;
-
 //Flags
 byte mode_flag = OFF;
 
 //Accurate Weight Detection Variables
+HX711  scale;
 float weight = 0;
 
 //Accurate Weight Distribution Variables    
 int matrix[16][16];   //Value Matrix
-int calibra[16][16];  //Calibration Matrix 
-
+int calibra[16][16];  //Calibration Matrix
 int valor = 0;
 int minsensor=254;
 const boolean muxChannel[16][4]={
@@ -51,24 +40,16 @@ const boolean muxChannel[16][4]={
   };
 
 //UART Communication
+SoftwareSerial NodeMCU(RX, TX); 
 byte length_buffer = 0;
+char inBuffer[64];
+int buffer_len = 0;
+byte uart_flag = 0;
 
+//Timers
 SimpleTimer receiveTimer(1000);
-SimpleTimer timer(30000);
-
-
-void testWrite()
-{
-  char message[5];
-  
-  message[0] = '{';
-  message[1] = NOTIFICATIONS;
-  message[2] = SEND_NOTIFICATION;
-  message[3] = 't';
-  message[4] = '}';
-
-  NodeMCU.write(message,5);
-}
+SimpleTimer liveStreamTimer(400);
+SimpleTimer weightChangeTimer(800);
 
 //****************************************************
 //Secret Sauce                                       *
@@ -85,7 +66,9 @@ void homeModeHandle()
   //De-activate buzzer
   digitalWrite(BUZZER, LOW);
 
-  Serial.print("Weight ->");
+  sendWeight();
+
+  /*Serial.print("Weight ->");
   float new_weight = getWeight();
   Serial.println(weight);
   
@@ -98,7 +81,7 @@ void homeModeHandle()
   else
   {
     weight = new_weight;
-  }
+  }*/
   
   return;
 }
@@ -202,6 +185,25 @@ float getWeight()
     //Return weight
     return reading;
 }
+
+void sendWeight()
+{
+  char message[5];
+  long int reading = (long int) getWeight();
+  if (reading < 0) reading = 0;
+  
+  message[0] = '{';
+  message[1] = NOTIFICATIONS;
+  message[2] = LIVE_STREAM_WEIGHT;
+  message[3] = (reading) >> 24;
+  message[4] = (reading) >> 16;
+  message[5] = (reading ) >> 8;
+  message[6] = (reading) >> 0;
+  message[7] = '}';
+
+  NodeMCU.write(message,8);
+}
+
 /*
 float getLastReading()
 {
@@ -454,7 +456,7 @@ void decodeMessage()
         Serial.print("ERROR: Cannot decode the message -> ");
         for (byte q = 0; q < buffer_len; q++)
         {
-          Serial.print(inBuffer[q]);
+          Serial.print(inBuffer[q],HEX);
         }
         Serial.println("");
         break;
@@ -473,12 +475,12 @@ void setup()
   //Start the software serial for communication with the NodeMCU
   initializeCommunications();
   
-  /*if (initializeWeightDetection() == EXIT_FAILURE)
+  if (initializeWeightDetection() == EXIT_FAILURE)
   {
     Serial.println("SmartMat: Accurate Weight Detection Layer failed to initialize.");
     while(1);
   }
-  if (initializeWeightDistribution() == EXIT_FAILURE)
+  /*if (initializeWeightDistribution() == EXIT_FAILURE)
   {
     Serial.println("SmartMat: Accurate Weight Distribution Layer failed to initialize.");
     while(1);
@@ -561,16 +563,36 @@ void loop()
   {
     decodeMessage();
   }
-  if (timer.isReady())
+
+  //Timers
+  //Check for Live Stream Timer
+  if (liveStreamTimer.isReady())
   {
-    //testWrite();
-    timer.reset();
+    //sendWeight();
+    liveStreamTimer.reset();
   }
+  //Check if should drop message
   if ((receiveTimer.isReady()) && (uart_flag == 1))
   {
     uart_flag = 0;
     buffer_len = 0;
     Serial.println("SmartMat: Dropping Message...");
+  }
+  if (weightChangeTimer.isReady())
+  {
+    if ((getWeight() >= weight + THRESHOLD))
+    {
+      Serial.println("SmartMat: Some weight has been detected...");
+      weight = getWeight();
+      mode_flag = ON;
+    }
+    else if ((getWeight() <= weight - THRESHOLD))
+    {
+      Serial.println("SmartMat: Some weight has been removed...");
+      weight = getWeight();
+      mode_flag = ON;
+    }
+    weightChangeTimer.reset();
   }
 
   //Check for Weight Change

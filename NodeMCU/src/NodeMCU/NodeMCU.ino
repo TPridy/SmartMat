@@ -6,6 +6,7 @@
 SoftwareSerial SmartMat(D5,D6);
 
 int mat_mode = HOME;
+int last_mat_mode = HOME;
 int weight_mode = POUNDS;
 int notifications = DONT_SEND;
 
@@ -30,15 +31,29 @@ byte uart_flag = 0;
 
 BLYNK_WRITE(V2)
 {
+  char payload[4];
   if (param.asInt() == LOCKED) 
   {
     Serial.println("NodeMCU: Locked");
-    mat_mode == LOCKED;
+    last_mat_mode = mat_mode;
+    mat_mode = LOCKED;
+    //Send mode change to SmartMat
+    payload[0] = '{';
+    payload[1] = CHANGE_MODE;
+    payload[2] = LOCKED;
+    payload[3] = '}';
+    SmartMat.write(payload,4);
   } 
   else 
   {
     Serial.println("NodeMCU: Unlocked");
-    mat_mode == NONE;
+    mat_mode = last_mat_mode;
+    //Send mode change to SmartMat
+    payload[0] = '{';
+    payload[1] = CHANGE_MODE;
+    payload[2] = mat_mode;
+    payload[3] = '}';
+    SmartMat.write(payload,4);
   }
 }
 
@@ -48,6 +63,8 @@ BLYNK_WRITE(V0)
   int blynk_mode = param.asInt();
   if (blynk_mode != mat_mode)
   {
+    //Turn off lock
+    Blynk.virtualWrite(V2, 0);
     switch(blynk_mode)
     {
       case HOME:        Serial.println("NodeMCU: Changing mode to HOME...");
@@ -58,7 +75,6 @@ BLYNK_WRITE(V0)
                         payload[2] = HOME;
                         payload[3] = '}';
                         SmartMat.write(payload,4);
-                        Serial.println("NodeMCU: Mode changed to HOME.");
                         break;
       case AWAY:        Serial.println("NodeMCU: Changing mode to AWAY...");
                         mat_mode = AWAY;
@@ -68,7 +84,6 @@ BLYNK_WRITE(V0)
                         payload[2] = AWAY;
                         payload[3] = '}';
                         SmartMat.write(payload,4);
-                        Serial.println("NodeMCU: Mode changed to AWAY.");
                         break;
       case NIGHT:       Serial.println("NodeMCU: Changing mode to NIGHT...");
                         mat_mode = NIGHT;
@@ -78,27 +93,6 @@ BLYNK_WRITE(V0)
                         payload[2] = NIGHT;
                         payload[3] = '}';
                         SmartMat.write(payload,4);
-                        Serial.println("NodeMCU: Mode changed to NIGHT.");
-                        break;
-      case ALARM:       Serial.println("NodeMCU: Changing mode to ALARM...");
-                        mat_mode = ALARM;
-                        //Send mode change to SmartMat;
-                        payload[0] = '{';
-                        payload[1] = CHANGE_MODE;
-                        payload[2] = ALARM;
-                        payload[3] = '}';
-                        SmartMat.write(payload,4);
-                        Serial.println("NodeMCU: Mode changed to ALARM.");
-                        break;
-      case LOCKED:      Serial.println("NodeMCU: Changing mode to LOCKED...");
-                        mat_mode = LOCKED;
-                        //Send mode change to SmartMat
-                        payload[0] = '{';
-                        payload[1] = CHANGE_MODE;
-                        payload[2] = LOCKED;
-                        payload[3] = '}';
-                        SmartMat.write(payload,4);
-                        Serial.println("NodeMCU: Mode changed to LOCKED.");
                         break;
       default:          Serial.print("NodeMCU: Failed to change mode...\n");
                         break;
@@ -166,7 +160,7 @@ void checkforMessage()
 
 void decodeMessage()
 {
-  int new_weight = 0;
+  long weight = 0;
                                 
     /*
     This is where the message received from the SmartMat 
@@ -179,6 +173,11 @@ void decodeMessage()
         switch(inBuffer[1]) 
         {
           case LIVE_STREAM_WEIGHT:           Serial.println("NodeMCU: Live Stream Weight is Dislayed on App...");
+                                             weight |= inBuffer[2] << 24;
+                                             weight |= inBuffer[3] << 16;
+                                             weight |= inBuffer[4] << 8;
+                                             weight |= inBuffer[5] << 0;
+                                             Blynk.virtualWrite(V4, weight);
                                              break;
           case SEND_NOTIFICATION:            Serial.println("NodeMCU: Sending a Text Notification...");
                                              Blynk.notify("Oh Yeah!");
@@ -249,7 +248,7 @@ void decodeMessage()
         Serial.print("ERROR: Cannot decode the message -> ");
         for (byte q = 0; q < buffer_len; q++)
         {
-          Serial.print(inBuffer[q]);
+          Serial.print(inBuffer[q],HEX);
         }
         Serial.println("");
         break;
