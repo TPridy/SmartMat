@@ -52,7 +52,7 @@
 
 //Weight Detection
 #define CALIBRATION_FACTOR -7050.0
-#define THRESHOLD 1
+#define THRESHOLD 3
 
 //Weight Distribution
 #define s0  A4

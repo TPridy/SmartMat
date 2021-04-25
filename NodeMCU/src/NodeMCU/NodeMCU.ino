@@ -172,6 +172,14 @@ void decodeMessage()
         
         switch(inBuffer[1]) 
         {
+          case ALARM:                        Blynk.notify("The alarm on your SmartMat has been triggered!");
+                                             Blynk.email("thomas.pridy@gmail.com","SmartMat Incident","The alarm on your SmartMat has been triggered!");
+                                             Serial.println("NodeMCU: The alarm on your SmartMat has been triggered!");
+                                             break;
+          case DONT_SEND:                    Serial.print("NodeMCU: Received Notifcation '");
+                                             Serial.print("There is something of weight " + String(weight) + "lb(s) on the SmartMat.");
+                                             Serial.println("' but notifications are blocked.");
+                                             break;
           case LIVE_STREAM_WEIGHT:           Serial.println("NodeMCU: Live Stream Weight is Dislayed on App...");
                                              weight |= inBuffer[2] << 24;
                                              weight |= inBuffer[3] << 16;
@@ -180,66 +188,74 @@ void decodeMessage()
                                              Blynk.virtualWrite(V4, weight);
                                              break;
           case SEND_NOTIFICATION:            Serial.println("NodeMCU: Sending a Text Notification...");
-                                             Blynk.notify("Oh Yeah!");
-                                             /*switch(inBuffer[3])
+                                             weight |= inBuffer[3] << 24;
+                                             weight |= inBuffer[4] << 16;
+                                             weight |= inBuffer[5] << 8;
+                                             weight |= inBuffer[6] << 0;
+                                             switch(inBuffer[2])
                                              {
-                                              case NONE:    memcpy(weight_data,&inBuffer[4],8); //Copies string weight data for concatenation
-                                                            strcat(notification_message,"Something of weight ");
-                                                            strcat(notification_message,weight_data);
-                                                            if (weight_mode == POUNDS)
+                                              case NONE:    if (weight_mode == POUNDS)
                                                             {
-                                                              strcat(notification_message,"lb(s)");
+                                                              Blynk.notify("There is something of weight " + String(weight) + "lb(s) on the SmartMat.");
                                                             }
                                                             else if (weight_mode == KILOGRAMS)
                                                             {
-                                                              strcat(notification_message,"kg(s)");
-                                                            }
-                                                            strcat(notification_message," was detected on the SmartMat!");
-                                                            Blynk.notify(notification_message);
+                                                              Blynk.notify("There is something of weight " + String(weight) + "kg(s) on the SmartMat.");
+                                                            }                                                       
                                                             break;
-                                              case PACKAGE: memcpy(weight_data,&inBuffer[4],8); //Copies string weight data for concatenation
-                                                            strcat(notification_message,"There is a package of weight ");
-                                                            strcat(notification_message,weight_data);
-                                                            if (weight_mode == POUNDS)
+                                              case PACKAGE: if (weight_mode == POUNDS)
                                                             {
-                                                              strcat(notification_message,"lb(s)");
+                                                              Blynk.notify("There is a package of weight " + String(weight) + "lb(s) on the SmartMat.");
                                                             }
                                                             else if (weight_mode == KILOGRAMS)
                                                             {
-                                                              strcat(notification_message,"kg(s)");
-                                                            }
-                                                            strcat(notification_message," on the SmartMat!");
-                                                            Blynk.notify(notification_message);
+                                                              Blynk.notify("There is a package of weight " + String(weight) + "kg(s) on the SmartMat.");
+                                                            }                                                       
                                                             break;
-                                              case PERSON:  memcpy(weight_data,&inBuffer[4],8); //Copies string weight data for concatenation
-                                                            strcat(notification_message,"There is a person of weight ");
-                                                            strcat(notification_message,weight_data);
-                                                            if (weight_mode == POUNDS)
+                                              case PERSON:  if (weight_mode == POUNDS)
                                                             {
-                                                              strcat(notification_message,"lb(s)");
+                                                              Blynk.notify("There is a person of weight " + String(weight) + "lb(s) on the SmartMat.");
                                                             }
                                                             else if (weight_mode == KILOGRAMS)
                                                             {
-                                                              strcat(notification_message,"kg(s)");
-                                                            }
-                                                            strcat(notification_message," on the SmartMat!");
-                                                            Blynk.notify(notification_message);
+                                                              Blynk.notify("There is a person of weight " + String(weight) + "kg(s) on the SmartMat.");
+                                                            }                                                       
                                                             break;
                                               default:      Serial.println("NodeMCU: Error in deciphering message");
                                                             break;
-                                             }*/
-  
+                                             }
                                              break;
           case SEND_EMAIL:                   switch(inBuffer[3])
                                              {
-                                                case NONE:     Blynk.email("genek1999@gmail.com", "SmartMat Alert", "There is something on your mat!");
-                                                               break;
-                                                case PACKAGE:  Blynk.email("genek1999@gmail.com", "SmartMat Alert", "There is a package on your mat!");
-                                                               break;
-                                                case PERSON:   Blynk.email("genek1999@gmail.com", "SmartMat Alert", "There is a person on your mat!");
-                                                               break;
-                                                default:       Serial.println("NodeMCU: Error in deciphering message");
-                                                               break;
+                                                case NONE:      if (weight_mode == POUNDS)
+                                                                {
+                                                                  Blynk.email("thomas.pridy@gmail.com","SmartMat Alert","There is something of weight " + String(weight) + "lb(s) on the SmartMat.");
+                                                                }
+                                                                else if (weight_mode == KILOGRAMS)
+                                                                {
+                                                                  Blynk.email("thomas.pridy@gmail.com","SmartMat Alert","There is something of weight " + String(weight) + "lb(s) on the SmartMat.");
+                                                                } 
+                                                                break;  
+                                                case PACKAGE:   if (weight_mode == POUNDS)
+                                                                {
+                                                                  Blynk.email("thomas.pridy@gmail.com","SmartMat Alert","There is a package of weight " + String(weight) + "lb(s) on the SmartMat.");
+                                                                }
+                                                                else if (weight_mode == KILOGRAMS)
+                                                                {
+                                                                  Blynk.email("thomas.pridy@gmail.com","SmartMat Alert","There is a package of weight " + String(weight) + "lb(s) on the SmartMat.");
+                                                                } 
+                                                                break;  
+                                                case PERSON:    if (weight_mode == POUNDS)
+                                                                {
+                                                                  Blynk.email("thomas.pridy@gmail.com","SmartMat Alert","There is a person of weight " + String(weight) + "lb(s) on the SmartMat.");
+                                                                }
+                                                                else if (weight_mode == KILOGRAMS)
+                                                                {
+                                                                  Blynk.email("thomas.pridy@gmail.com","SmartMat Alert","There is a person of weight " + String(weight) + "lb(s) on the SmartMat.");
+                                                                } 
+                                                                break;  
+                                                default:        Serial.println("NodeMCU: Error in deciphering message");
+                                                                break;
                                              }
                                              break;                                                                      
         }
@@ -323,8 +339,6 @@ void setup()
                             break;                                                                                
   }
   Serial.print("\n");
-
-  
 }
  
 void loop() 
