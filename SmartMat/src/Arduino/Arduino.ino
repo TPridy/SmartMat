@@ -48,7 +48,7 @@ byte uart_flag = 0;
 
 //Timers
 SimpleTimer receiveTimer(1000);
-SimpleTimer liveStreamTimer(400);
+SimpleTimer liveStreamTimer(2000);
 SimpleTimer weightChangeTimer(1500);
 SimpleTimer buzzerTimer(30000);
 
@@ -64,8 +64,70 @@ void homeModeHandle()
   int identifier = PACKAGE;
 
   //Notify Homeowner
+  if (identifier == PACKAGE)
+  {
+    char message[9];
+    long int reading = (long int) getWeight();
+    if (reading < 1) reading = 0;
+    else
+    {
+      message[0] = '{';
+      message[1] = NOTIFICATIONS;
+      message[2] = notification_mode;
+      message[3] = identifier;
+      message[4] = (reading) >> 24;
+      message[5] = (reading) >> 16;
+      message[6] = (reading ) >> 8;
+      message[7] = (reading) >> 0;
+      message[8] = '}';
+    
+      NodeMCU.write(message,9);
+    }
+  }
+}
+
+void awayModeHandle()
+{
+  Serial.println("SmartMat: AWAY Handle...");
+  
+  //Determine Package or Person
+  int identifier = PACKAGE;
+
   char message[9];
   long int reading = (long int) getWeight();
+  if (reading < 1) reading = 0;
+
+  //If package auto-lock
+  if (identifier == PACKAGE)
+  {
+    mode = LOCKED;
+    message[0] = '{';
+    message[1] = CHANGE_MODE;
+    message[2] = LOCKED;
+    message[3] = '}';
+    NodeMCU.write(message,4);
+  }
+  message[0] = '{';
+  message[1] = NOTIFICATIONS;
+  message[2] = notification_mode;
+  message[3] = identifier;
+  message[4] = (reading) >> 24;
+  message[5] = (reading) >> 16;
+  message[6] = (reading ) >> 8;
+  message[7] = (reading) >> 0;
+  message[8] = '}';
+  NodeMCU.write(message,9);
+}
+
+void nightModeHandle()
+{
+  Serial.println("SmartMat: NIGHT Handle...");
+  
+  //Notify Homeowner
+  char message[9];
+  long int reading = (long int) getWeight();
+  //Determine Package or Person
+  int identifier = PACKAGE;
   if (reading < 1) reading = 0;
   else
   {
@@ -81,34 +143,6 @@ void homeModeHandle()
   
     NodeMCU.write(message,9);
   }
-}
-
-void awayModeHandle()
-{
-  Serial.println("SmartMat: AWAY Handle...");
-  
-  //Serial.print("AWAY\n");
-  /*
-  if (getWeight() > THRESHOLD)
-  {
-    //Send Notifcation that there is weight on the mat
-  }
-  */
-  return;
-}
-
-void nightModeHandle()
-{
-  Serial.println("SmartMat: NIGHT Handle...");
-  
-  //Serial.print("NIGHT\n");
-  /*
-  if (getWeight() > THRESHOLD)
-  {
-    //Send Notifcation that there is weight on the mat
-  }
-  */
-  return;
 }
 
 void lockedModeHandle()
@@ -302,8 +336,7 @@ void getAcuurateWeightDistributionMatrx()
       
       if(valor <= 40) valor = 0;
       if(valor > 254) valor = 254;
-     
-      //Serial.write(valor);
+
       matrix[j][i] = valor;
     } 
   }
@@ -410,6 +443,22 @@ void decodeMessage()
                             break;
           default:          Serial.println("ERROR: Did not recognize weight mode to change to...");
                             break;                                                                                
+        }
+        break;
+      case CHANGE_NOTIFICATION_MODE:
+        switch(inBuffer[1]) 
+        {
+          case SEND_NOTIFICATION: Serial.println("SmartMat: Changing notification mode to TEXT...");
+                                  notification_mode = SEND_NOTIFICATION;
+                                  break;
+          case SEND_EMAIL:        Serial.println("SmartMat: Changing notification mode to EMAIL...");
+                                  notification_mode = SEND_EMAIL;
+                                  break;
+          case DONT_SEND:         Serial.println("SmartMat: Changing notification mode to DO NOT DISTURB...");
+                                  notification_mode = DONT_SEND;
+                                  break;
+                default:          Serial.println("ERROR: Did not recognize mode to change to...");
+                                  break;                                                                                
         }
         break;
       default:  
@@ -524,9 +573,10 @@ void loop()
   //Check for Live Stream Timer
   if (liveStreamTimer.isReady())
   {
-    //sendWeight();
+    sendWeight();
     liveStreamTimer.reset();
   }
+  
   //UART for Bad Messages
   if ((receiveTimer.isReady()) && (uart_flag == 1))
   {
@@ -534,24 +584,30 @@ void loop()
     buffer_len = 0;
     Serial.println("SmartMat: Dropping Message...");
   }
+
+  //If Weight Change
   if (weightChangeTimer.isReady())
   {
     float currentWeight = getWeight();
     if ((currentWeight >= weight + THRESHOLD))
     {
-      Serial.println("SmartMat: Some weight has been detected...");
+      Serial.print("SmartMat: Some weight has been detected...");
       weight = getWeight();
+      Serial.println(weight);
       mode_flag = ON;
     }
     else if ((currentWeight <= weight - THRESHOLD))
     {
-      Serial.println("SmartMat: Some weight has been removed...");
+      Serial.print("SmartMat: Some weight has been removed...");
       weight = getWeight();
+      Serial.println(weight);
       mode_flag = ON;
     }
     //sendWeight();
     weightChangeTimer.reset();
   }
+
+  //If Buzzer has gone over a certain time
   if (buzzerTimer.isReady())
   {
     digitalWrite(BUZZER, LOW);

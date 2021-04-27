@@ -27,13 +27,14 @@
 //Messages
 #define CHANGE_MODE 0
 #define CHANGE_WEIGHT_MODE 1
+#define CHANGE_NOTIFICATION_MODE 2
 #define NOTIFICATIONS 3
 
 // Notifications
-#define SEND_NOTIFICATION 0
-#define SEND_EMAIL 1
-#define DONT_SEND 2
-#define LIVE_STREAM_WEIGHT 3
+#define SEND_NOTIFICATION 1
+#define SEND_EMAIL 2
+#define DONT_SEND 3
+#define LIVE_STREAM_WEIGHT 4
 
 //WiFi Status
 #define DISCONNECTED 0
