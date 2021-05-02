@@ -8,7 +8,7 @@ SoftwareSerial SmartMat(D5,D6);
 int mat_mode = HOME;
 int last_mat_mode = HOME;
 int weight_mode = POUNDS;
-int notification_mode = DONT_SEND;
+int notification_mode = SEND_NOTIFICATION;
 
 /* Blynk */
 #define BLYNK_PRINT Serial
@@ -180,6 +180,52 @@ BLYNK_WRITE(V1)
   }
 }
 
+void printBanner()
+{
+  Serial.println("            NodeMCU             ");
+  Serial.println("*********************************");
+  Serial.print("Mode: ");
+  switch(mat_mode) 
+  {
+    case NONE:        Serial.println("NONE");
+                      break;
+    case HOME:        Serial.println("HOME");
+                      break;
+    case AWAY:        Serial.println("AWAY");
+                      break;
+    case NIGHT:       Serial.println("NIGHT");
+                      break;
+    case LOCKED:      Serial.println("LOCKED");
+                      break;
+    case ALARM:       Serial.println("ALARM");
+                      break;
+    default:          Serial.println("\nERROR: Did not recognize mode...");
+                      break;                                                                                
+  }
+  Serial.print("Weight Mode: ");
+  switch(weight_mode) 
+  {
+    case KILOGRAMS:   Serial.println("KILOGRAMS");
+                      break;
+    case POUNDS:      Serial.println("POUNDS");
+                      break;
+    default:          Serial.println("\nERROR: Did not recognize mode...");
+                      break;                                                                                
+  }
+  Serial.print("Notifications Mode: ");
+  switch(notification_mode) 
+  {
+    case SEND_NOTIFICATION: Serial.println("TEXT");
+                            break;
+    case SEND_EMAIL:        Serial.println("EMAIL");
+                            break; 
+    case DONT_SEND:         Serial.println("DO NOT DISTURB");
+                            break;                                                                 
+    default:                Serial.println("\nERROR: Did not recognize mode...");
+                            break;                                                                                
+  }
+}
+
 //****************************************************
 //UART Communication                                 *
 //****************************************************
@@ -237,6 +283,7 @@ void decodeMessage()
                             Blynk.virtualWrite(V2, LOCKED);
                             break;
           default:          Serial.println("ERROR: Did not recognize mode to change to...");
+                            synchronizeSettings();
                             break;                                                                                
         }
         break;
@@ -249,7 +296,11 @@ void decodeMessage()
                                              Blynk.email("SmartMat Incident","The alarm on your SmartMat has been triggered!");
                                              Serial.println("NodeMCU: The alarm on your SmartMat has been triggered!");
                                              break;
-          case DONT_SEND:                    Serial.print("NodeMCU: Received Notifcation '");
+          case DONT_SEND:                    weight |= inBuffer[3] << 24;
+                                             weight |= inBuffer[4] << 16;
+                                             weight |= inBuffer[5] << 8;
+                                             weight |= inBuffer[6] << 0;
+                                             Serial.print("NodeMCU: Received Notifcation '");
                                              Serial.print("There is something of weight " + String(weight) + "lb(s) on the SmartMat.");
                                              Serial.println("' but notifications are blocked.");
                                              break;
@@ -298,7 +349,12 @@ void decodeMessage()
                                                             break;
                                              }
                                              break;
-          case SEND_EMAIL:                   switch(inBuffer[3])
+          case SEND_EMAIL:                   Serial.println("NodeMCU: Sending Email...");
+                                             weight |= inBuffer[3] << 24;
+                                             weight |= inBuffer[4] << 16;
+                                             weight |= inBuffer[5] << 8;
+                                             weight |= inBuffer[6] << 0;
+                                             switch(inBuffer[3])
                                              {
                                                 case NONE:      if (weight_mode == POUNDS)
                                                                 {
@@ -346,14 +402,40 @@ void decodeMessage()
     uart_flag = 0;
 }
 
+void synchronizeSettings()
+{
+  Serial.println("NodeMCU: Synchronizing Settings with SmartMat");
+  char message[4];
+  message[0] = '{';
+  message[1] = CHANGE_MODE;
+  message[2] = mat_mode;
+  message[3] = '}';
+  SmartMat.write(message,4);
+  message[1] = CHANGE_WEIGHT_MODE;
+  message[2] = weight_mode;
+  SmartMat.write(message,4);
+  message[1] = CHANGE_NOTIFICATION_MODE;
+  message[2] = notification_mode;
+  SmartMat.write(message,4);
+}
+
 void setup() 
 {
+  //Wait for SmartMat to startup
+  delay(10000);
+
+  //Send control messages to SmartMat
+  synchronizeSettings();
+  
   //Start Serial Communications
   Serial.begin(115200); 
   SmartMat.begin(57600);
   
   //Start Up Message
   Serial.println("NodeMCU: Starting...");
+
+  //Send control messages to SmartMat
+  synchronizeSettings();
   
   //Connect to SmartPhone Application
   Serial.println("NodeMCU: Establishing Network Connection...");
@@ -367,51 +449,11 @@ void setup()
   Blynk.virtualWrite(V0, mat_mode);
   Blynk.virtualWrite(V1, weight_mode);
   Blynk.virtualWrite(V6, notification_mode);
+  Blynk.virtualWrite(V2, 0);
 
   Serial.println("NodeMCU: NodeMCU Initialization Complete");
   Serial.print("\n");
-  Serial.println("            NodeMCU             ");
-  Serial.println("*********************************");
-  Serial.print("Mode: ");
-  switch(mat_mode) 
-  {
-    case NONE:        Serial.println("NONE");
-                      break;
-    case HOME:        Serial.println("HOME");
-                      break;
-    case AWAY:        Serial.println("AWAY");
-                      break;
-    case NIGHT:       Serial.println("NIGHT");
-                      break;
-    case LOCKED:      Serial.println("LOCKED");
-                      break;
-    case ALARM:       Serial.println("ALARM");
-                      break;
-    default:          Serial.println("\nERROR: Did not recognize mode...");
-                      break;                                                                                
-  }
-  Serial.print("Weight Mode: ");
-  switch(weight_mode) 
-  {
-    case KILOGRAMS:   Serial.println("KILOGRAMS");
-                      break;
-    case POUNDS:      Serial.println("POUNDS");
-                      break;
-    default:          Serial.println("\nERROR: Did not recognize mode...");
-                      break;                                                                                
-  }
-  Serial.print("Notifications Mode: ");
-  switch(notification_mode) 
-  {
-    case SEND_NOTIFICATION: Serial.println("TEXT");
-                            break;
-    case SEND_EMAIL:        Serial.println("EMAIL");
-                            break; 
-    case DONT_SEND:         Serial.println("DO NOT DISTURB");
-                            break;                                                                 
-    default:                Serial.println("\nERROR: Did not recognize mode...");
-                            break;                                                                                
-  }
+  printBanner();
   Serial.print("\n");
 }
  

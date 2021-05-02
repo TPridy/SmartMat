@@ -53,11 +53,11 @@
 
 //Weight Detection
 //#define CALIBRATION_FACTOR -7050.0
-#define CALIBRATION_FACTOR -7000
+#define CALIBRATION_FACTOR -11098
 #define THRESHOLD 1
 
 //Weight Distribution
-#define s0  A4
+/*#define s0  A4
 #define s1  A3
 #define s2  A2
 #define s3  A1
@@ -66,6 +66,6 @@
 #define w2  4
 #define w3  3
 #define OUT_pin  2
-#define SIG_pin  A0
+#define SIG_pin  A0*/
 
 #endif

@@ -15,6 +15,7 @@ byte mode_flag = OFF;
 HX711  scale;
 float weight = 0;
 
+/*
 //Accurate Weight Distribution Variables    
 int matrix[16][16];   //Value Matrix
 int calibra[16][16];  //Calibration Matrix
@@ -37,7 +38,7 @@ const boolean muxChannel[16][4]={
     {1,0,1,1}, //channel 13
     {0,1,1,1}, //channel 14
     {1,1,1,1}  //channel 15
-  };
+  };*/
 
 //UART Communication
 SoftwareSerial NodeMCU(RX, TX); 
@@ -48,8 +49,7 @@ byte uart_flag = 0;
 
 //Timers
 SimpleTimer receiveTimer(1000);
-SimpleTimer liveStreamTimer(2000);
-SimpleTimer weightChangeTimer(1500);
+SimpleTimer weightChangeTimer(4000);
 SimpleTimer buzzerTimer(30000);
 
 //****************************************************
@@ -60,29 +60,33 @@ void homeModeHandle()
 {
   Serial.println("SmartMat: HOME Handle...");
 
-  //Determine Package or Person
-  int identifier = PACKAGE;
+  //Variables
+  long int reading = 0;
 
-  //Notify Homeowner
-  if (identifier == PACKAGE)
+  //Get Weight
+  if (weight_mode == KILOGRAMS)
+  {
+    reading = (long int) weight/2.205;
+  }
+  else if (weight_mode == POUNDS)
+  {
+    reading = (long int) weight;
+  }
+
+  //If Package send notification
+  if ((reading < 50) && (reading > 1))
   {
     char message[9];
-    long int reading = (long int) getWeight();
-    if (reading < 1) reading = 0;
-    else
-    {
-      message[0] = '{';
-      message[1] = NOTIFICATIONS;
-      message[2] = notification_mode;
-      message[3] = identifier;
-      message[4] = (reading) >> 24;
-      message[5] = (reading) >> 16;
-      message[6] = (reading ) >> 8;
-      message[7] = (reading) >> 0;
-      message[8] = '}';
-    
-      NodeMCU.write(message,9);
-    }
+    message[0] = '{';
+    message[1] = NOTIFICATIONS;
+    message[2] = notification_mode;
+    message[3] = PACKAGE;
+    message[4] = (reading) >> 24;
+    message[5] = (reading) >> 16;
+    message[6] = (reading) >> 8;
+    message[7] = (reading) >> 0;
+    message[8] = '}';
+    NodeMCU.write(message,9);
   }
 }
 
@@ -90,16 +94,29 @@ void awayModeHandle()
 {
   Serial.println("SmartMat: AWAY Handle...");
   
-  //Determine Package or Person
-  int identifier = PACKAGE;
-
+  //Veriables
+  int identifier = NONE;
   char message[9];
-  long int reading = (long int) getWeight();
-  if (reading < 1) reading = 0;
+  long int reading = (long int) weight;
+  
+  //Determine Package or Person
+  if (reading < 1) 
+  {
+    reading = 0;
+  }
+  else if (reading < 50)
+  {
+    identifier = PACKAGE;
+  }
+  else
+  {
+    identifier = PERSON;
+  }
 
   //If package auto-lock
-  if (identifier == PACKAGE)
+  if ((identifier == PACKAGE) && (reading >= 1))
   {
+    Serial.println("SmartMat: Auto-locking package...");
     mode = LOCKED;
     message[0] = '{';
     message[1] = CHANGE_MODE;
@@ -107,13 +124,21 @@ void awayModeHandle()
     message[3] = '}';
     NodeMCU.write(message,4);
   }
+
+  //Get Weight Conversion
+  if (weight_mode == KILOGRAMS)
+  {
+    reading = reading/2.205;
+  }
+  
+  //Send General Noticaitons
   message[0] = '{';
   message[1] = NOTIFICATIONS;
   message[2] = notification_mode;
   message[3] = identifier;
   message[4] = (reading) >> 24;
   message[5] = (reading) >> 16;
-  message[6] = (reading ) >> 8;
+  message[6] = (reading) >> 8;
   message[7] = (reading) >> 0;
   message[8] = '}';
   NodeMCU.write(message,9);
@@ -123,13 +148,36 @@ void nightModeHandle()
 {
   Serial.println("SmartMat: NIGHT Handle...");
   
-  //Notify Homeowner
+  //Variables
   char message[9];
-  long int reading = (long int) getWeight();
+  long int reading = 0;
+  int identifier = NONE;
+
+  //Get Weight
+  if (weight_mode == KILOGRAMS)
+  {
+    reading = (long int) weight/2.205;
+  }
+  else if (weight_mode == POUNDS)
+  {
+    reading = (long int) weight;
+  }
+  
   //Determine Package or Person
-  int identifier = PACKAGE;
-  if (reading < 1) reading = 0;
+  if (reading < 1) 
+  {
+    reading = 0;
+  }
+  else if (reading <= 50)
+  {
+    identifier = PACKAGE;
+  }
   else
+  {
+    identifier = PERSON;
+  }
+ 
+  if ((identifier == PACKAGE) || (identifier == PERSON))
   {
     message[0] = '{';
     message[1] = NOTIFICATIONS;
@@ -137,7 +185,7 @@ void nightModeHandle()
     message[3] = identifier;
     message[4] = (reading) >> 24;
     message[5] = (reading) >> 16;
-    message[6] = (reading ) >> 8;
+    message[6] = (reading) >> 8;
     message[7] = (reading) >> 0;
     message[8] = '}';
   
@@ -148,7 +196,8 @@ void nightModeHandle()
 void lockedModeHandle()
 {
   Serial.println("SmartMat: LOCKED Handle...");
-  
+
+  //Trigger Alarm
   alarmModeHandle();
   
   return;
@@ -157,20 +206,68 @@ void lockedModeHandle()
 void alarmModeHandle()
 {
   Serial.println("SmartMat: ALARM activated.");
+
+  //Variables
+  char message[4];
+  long int reading = 0;
   
   //Activate buzzer
   digitalWrite(BUZZER, HIGH);
   buzzerTimer.reset();
   
-  //Send notifications
-  char message[9];
-  long int reading = (long int) weight;
+  //Send notification
   message[0] = '{';
   message[1] = NOTIFICATIONS;
   message[2] = ALARM;
   message[3] = '}';
-
   NodeMCU.write(message,4);
+}
+
+void printBanner()
+{
+  Serial.println("            SmartMat             ");
+  Serial.println("*********************************");
+  Serial.print("Mode: ");
+  switch(mode) 
+  {
+    case NONE:        Serial.println("NONE");
+                      break;
+    case HOME:        Serial.println("HOME");
+                      break;
+    case AWAY:        Serial.println("AWAY");
+                      break;
+    case NIGHT:       Serial.println("NIGHT");
+                      break;
+    case LOCKED:      Serial.println("LOCKED");
+                      break;
+    case ALARM:       Serial.println("ALARM");
+                      break;
+    default:          Serial.println("\nERROR: Did not recognize mode...");
+                      break;                                                                                
+  }
+  Serial.print("Weight Mode: ");
+  switch(weight_mode) 
+  {
+    case KILOGRAMS:   Serial.println("KILOGRAMS");
+                      break;
+    case POUNDS:      Serial.println("POUNDS");
+                      break;
+    default:          Serial.println("\nERROR: Did not recognize mode...");
+                      break;                                                                                
+  }
+  Serial.print("Notifications Mode: ");
+  switch(notification_mode) 
+  {
+    case SEND_NOTIFICATION: Serial.println("TEXT");
+                            break;
+    case SEND_EMAIL:        Serial.println("EMAIL");
+                            break; 
+    case DONT_SEND:         Serial.println("DO NOT DISTURB");
+                            break;                                                                 
+    default:                Serial.println("\nERROR: Did not recognize mode...");
+                            break;                                                                                
+  }
+  Serial.print("\n");
 }
 
 //****************************************************
@@ -202,26 +299,34 @@ float getWeight()
 
 void sendWeight()
 {
+  //Varibles
   char message[5];
-  long int reading = (long int) getWeight();
-  if (reading < 0) reading = 0;
-  
+  long int reading = 0;
+  if (weight_mode == KILOGRAMS)
+  {
+    reading = (long int) getWeight()/2.205;
+  }
+  else if (weight_mode == POUNDS)
+  {
+    reading = (long int) getWeight();
+  }
+
+  //Send Weight Update
   message[0] = '{';
   message[1] = NOTIFICATIONS;
   message[2] = LIVE_STREAM_WEIGHT;
   message[3] = (reading) >> 24;
   message[4] = (reading) >> 16;
-  message[5] = (reading ) >> 8;
+  message[5] = (reading) >> 8;
   message[6] = (reading) >> 0;
   message[7] = '}';
-
   NodeMCU.write(message,8);
 }
 
 //****************************************************
 //Accurate Weight Distribution                       *
 //****************************************************
-
+/*
 int initializeWeightDistribution()
 {
     //Print to Serial
@@ -359,7 +464,7 @@ void printAccurateWeightDistributionMatrix()
       Serial.print("\n");
       Serial.print("\n");
       Serial.print("\n");
-}
+}*/
 
 //****************************************************
 //UART Communication                                 *
@@ -468,12 +573,31 @@ void decodeMessage()
           Serial.print(inBuffer[q],HEX);
         }
         Serial.println("");
+        synchronizeSettings();
+        printBanner();
         break;
     }
     buffer_len = 0;
     uart_flag = 0;
+    printBanner();
 }
 
+void synchronizeSettings()
+{
+  Serial.println("SmartMat: Synchronizing Settings with NodeMCU");
+  char message[4];
+  message[0] = '{';
+  message[1] = CHANGE_MODE;
+  message[2] = mode;
+  message[3] = '}';
+  NodeMCU.write(message,4);
+  message[1] = CHANGE_WEIGHT_MODE;
+  message[2] = weight_mode;
+  NodeMCU.write(message,4);
+  message[1] = CHANGE_NOTIFICATION_MODE;
+  message[2] = notification_mode;
+  NodeMCU.write(message,4);
+}
 
 //****************************************************
 //Main Loop                                          *
@@ -483,7 +607,7 @@ void setup()
 {  
   //Start the software serial for communication with the NodeMCU
   initializeCommunications();
-  
+  //Send control messages to NodeMCU
   if (initializeWeightDetection() == EXIT_FAILURE)
   {
     Serial.println("SmartMat: Accurate Weight Detection Layer failed to initialize.");
@@ -496,49 +620,7 @@ void setup()
   }*/
   Serial.println("SmartMat: SmartMat Initialization Complete");
   Serial.print("\n");
-  Serial.println("            SmartMat             ");
-  Serial.println("*********************************");
-  Serial.print("Mode: ");
-  switch(mode) 
-  {
-    case NONE:        Serial.println("NONE");
-                      break;
-    case HOME:        Serial.println("HOME");
-                      break;
-    case AWAY:        Serial.println("AWAY");
-                      break;
-    case NIGHT:       Serial.println("NIGHT");
-                      break;
-    case LOCKED:      Serial.println("LOCKED");
-                      break;
-    case ALARM:       Serial.println("ALARM");
-                      break;
-    default:          Serial.println("\nERROR: Did not recognize mode...");
-                      break;                                                                                
-  }
-  Serial.print("Weight Mode: ");
-  switch(weight_mode) 
-  {
-    case KILOGRAMS:   Serial.println("KILOGRAMS");
-                      break;
-    case POUNDS:      Serial.println("POUNDS");
-                      break;
-    default:          Serial.println("\nERROR: Did not recognize mode...");
-                      break;                                                                                
-  }
-  Serial.print("Notifications Mode: ");
-  switch(notification_mode) 
-  {
-    case SEND_NOTIFICATION: Serial.println("TEXT");
-                            break;
-    case SEND_EMAIL:        Serial.println("EMAIL");
-                            break; 
-    case DONT_SEND:         Serial.println("NO MESSAGE");
-                            break;                                                                 
-    default:                Serial.println("\nERROR: Did not recognize mode...");
-                            break;                                                                                
-  }
-  Serial.print("\n");
+  printBanner();
 }
  
 void loop()
@@ -570,13 +652,6 @@ void loop()
   }
 
   //Timers
-  //Check for Live Stream Timer
-  if (liveStreamTimer.isReady())
-  {
-    sendWeight();
-    liveStreamTimer.reset();
-  }
-  
   //UART for Bad Messages
   if ((receiveTimer.isReady()) && (uart_flag == 1))
   {
@@ -603,7 +678,7 @@ void loop()
       Serial.println(weight);
       mode_flag = ON;
     }
-    //sendWeight();
+    sendWeight();
     weightChangeTimer.reset();
   }
 
