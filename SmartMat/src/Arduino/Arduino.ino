@@ -15,7 +15,6 @@ byte mode_flag = OFF;
 HX711  scale;
 float weight = 0;
 
-/*
 //Accurate Weight Distribution Variables    
 int matrix[16][16];   //Value Matrix
 int calibra[16][16];  //Calibration Matrix
@@ -38,7 +37,7 @@ const boolean muxChannel[16][4]={
     {1,0,1,1}, //channel 13
     {0,1,1,1}, //channel 14
     {1,1,1,1}  //channel 15
-  };*/
+  };
 
 //UART Communication
 SoftwareSerial NodeMCU(RX, TX); 
@@ -326,7 +325,7 @@ void sendWeight()
 //****************************************************
 //Accurate Weight Distribution                       *
 //****************************************************
-/*
+
 int initializeWeightDistribution()
 {
     //Print to Serial
@@ -464,7 +463,7 @@ void printAccurateWeightDistributionMatrix()
       Serial.print("\n");
       Serial.print("\n");
       Serial.print("\n");
-}*/
+}
 
 //****************************************************
 //UART Communication                                 *
