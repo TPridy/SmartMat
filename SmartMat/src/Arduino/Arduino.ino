@@ -613,11 +613,11 @@ void setup()
     Serial.println("SmartMat: Accurate Weight Detection Layer failed to initialize.");
     while(1);
   }
-  /*if (initializeWeightDistribution() == EXIT_FAILURE)
+  if (initializeWeightDistribution() == EXIT_FAILURE)
   {
     Serial.println("SmartMat: Accurate Weight Distribution Layer failed to initialize.");
     while(1);
-  }*/
+  }
   Serial.println("SmartMat: SmartMat Initialization Complete");
   Serial.print("\n");
   printBanner();
